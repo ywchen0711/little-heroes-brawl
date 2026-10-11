@@ -15,7 +15,10 @@ let twoP = false; try { twoP = localStorage.getItem('lhb_2p') === '1'; } catch (
 
 // ------------------------------------------------------------------ save
 function load() { try { const d = JSON.parse(localStorage.getItem('lhb_profile')); if (d && d.heroes) return P.fixProfile(d); } catch (e) { /* ignore */ } return P.newProfile(); }
-function save() { try { localStorage.setItem('lhb_profile', JSON.stringify(PR)); } catch (e) { /* ignore */ } }
+function save() { try { localStorage.setItem('lhb_profile', JSON.stringify(PR)); } catch (e) { /* ignore */ } if (cloud) cloud.touch('little-heroes', 'lhb_profile'); }
+// cloud saves (shared by every game on the site); the game keeps working if they are unavailable
+let cloud = null;
+import('/save.js').then(async (m) => { cloud = m; if (await m.pull('little-heroes', 'lhb_profile')) { PR = load(); if (mode === 'menu') menuScreen(); } }).catch(() => {});
 
 // ------------------------------------------------------------------ layout
 function resize() {
