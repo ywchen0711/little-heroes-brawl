@@ -1,0 +1,6 @@
+{
+  "name": "little-heroes-brawl",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node tools/test.mjs" }
+}

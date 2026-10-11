@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a1440">
+<title>小英雄齊打交 Little Heroes Brawl</title>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <canvas id="cv"></canvas>
+  <div id="screen" class="screen hidden"></div>
+  <div id="toast"></div>
+  <div id="touch" class="hidden">
+    <div id="skillBtns"></div>
+    <div id="stick"><div class="knob"></div></div>
+    <div id="btns">
+      <button data-k="D" class="tb d">🛡</button>
+      <button data-k="J" class="tb j">⤴</button>
+      <button data-k="A" class="tb a">👊</button>
+    </div>
+    <div id="itemBtns"><button data-k="i0" class="ib"></button><button data-k="i1" class="ib"></button><button data-k="i2" class="ib"></button></div>
+    <button data-k="pause" class="pz">⏸</button>
+  </div>
+</div>
+<script type="module" src="js/main.js?v=1"></script>
+<script src="/hub.js" data-pos="top-left"></script>
+</body>
+</html>
