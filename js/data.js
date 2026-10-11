@@ -51,6 +51,23 @@ export const SKILLS = Object.fromEntries([
   S('quickarrow', '快箭', 'Quick Arrow', 'ball', { elem: 'phys', mp: 25, dmg: 40, spd: 520, arrow: true }),
   S('triplearrow', '三連箭', 'Triple Arrow', 'ball', { elem: 'phys', mp: 50, dmg: 35, n: 3, spread: 1, spd: 480, arrow: true }),
   S('arrowrain', '箭雨', 'Arrow Rain', 'rain', { elem: 'phys', mp: 110, dmg: 40, n: 10, arrow: true }),
+  // more moves: element extras
+  S('blazekick', '炎龍腳', 'Blaze Kick', 'dash', { elem: 'fire', mp: 55, dmg: 60, spd: 420, dur: 0.32 }),
+  S('firespin', '火旋風', 'Fire Spin', 'nova', { elem: 'fire', mp: 75, dmg: 55, r: 95 }),
+  S('phoenix', '火鳳凰', 'Phoenix', 'ball', { elem: 'fire', mp: 110, dmg: 85, spd: 300, pierce: true }),
+  S('frostnova', '冰霜新星', 'Frost Nova', 'nova', { elem: 'ice', mp: 70, dmg: 40, r: 100 }),
+  S('iceshield', '冰之守護', 'Ice Guard', 'buff', { elem: 'ice', mp: 80, stat: 'guard', amt: 0.4, dur: 10 }),
+  S('glacier', '冰河衝擊', 'Glacier Line', 'column', { elem: 'ice', mp: 100, dmg: 55, n: 6 }),
+  S('thunderfist', '雷神拳', 'Thunder Fist', 'upper', { elem: 'elec', mp: 50, dmg: 80 }),
+  S('ballstorm', '雷球風暴', 'Spark Storm', 'ball', { elem: 'elec', mp: 85, dmg: 30, n: 5, spread: 1, spd: 380 }),
+  S('blink', '疾風步', 'Blink Strike', 'tele', { elem: 'elec', mp: 35, dmg: 40 }),
+  S('rockwall', '岩壁', 'Rock Wall', 'wall', { elem: 'earth', mp: 60, dmg: 40, hp: 320 }),
+  S('stomp', '震地踏', 'Stomp', 'nova', { elem: 'earth', mp: 60, dmg: 55, r: 95, ground: true }),
+  S('avalanche', '落石', 'Rockslide', 'rain', { elem: 'earth', mp: 120, dmg: 60, n: 6 }),
+  // more moves: anyone can learn these
+  S('powerpunch', '重拳', 'Power Punch', 'dash', { elem: 'phys', mp: 30, dmg: 50, spd: 260, dur: 0.22 }),
+  S('cyclone', '旋風腿', 'Cyclone Kick', 'dash', { elem: 'chi', mp: 50, dmg: 45, spd: 300, dur: 0.55 }),
+  S('firstaid', '急救', 'First Aid', 'heal', { elem: 'nature', mp: 70, heal: 90, r: 60 }),
 ].map((s) => [s.id, s]));
 
 // ------------------------------------------------------------------ heroes
@@ -74,6 +91,17 @@ export const HEROES = {
     skills: ['iceball', 'icespikes', 'heal', 'frostbeam', 'blizzard', 'iciclerain'] },
 };
 for (const h of Object.values(HEROES)) h.skills = h.skills.map((id) => SKILLS[id]);
+// besides their 6 signature moves, every hero can learn 3 more of their element and 6 moves anyone can learn
+const EXTRA = { josh: ['blazekick', 'firespin', 'phoenix'], erin: ['frostnova', 'iceshield', 'glacier'], jasper: ['thunderfist', 'ballstorm', 'blink'], jeff: ['rockwall', 'stomp', 'avalanche'] };
+export const EXTRA_LV = [7, 12, 17];
+export const UNIVERSAL = [['powerpunch', 3], ['cyclone', 5], ['chiblast', 8], ['shuriken', 10], ['firstaid', 13], ['chicannon', 22]];
+// the full list a hero can learn: { sk, lv (hero level needed), tag: 'sig' | 'elem' | 'uni' }
+export function moveList(heroId) {
+  const h = HEROES[heroId];
+  return [...h.skills.map((sk, i) => ({ sk, lv: SKILL_LV_REQ[i], tag: 'sig' })),
+    ...EXTRA[heroId].map((id, i) => ({ sk: SKILLS[id], lv: EXTRA_LV[i], tag: 'elem' })),
+    ...UNIVERSAL.map(([id, lv]) => ({ sk: SKILLS[id], lv, tag: 'uni' }))];
+}
 export const HERO_IDS = Object.keys(HEROES);
 // older saves used eight heroes: their progress moves to the closest new hero
 export const OLD_HEROES = { blaze: 'josh', kai: 'josh', volt: 'jasper', shade: 'jasper', robin: 'jasper', rocky: 'jeff', frost: 'erin', bloom: 'erin' };
@@ -117,6 +145,9 @@ export const STAGES = [
   { id: 'castle', zh: '黑暗城堡', en: 'Dark Castle', lv: 22, bg: 'castle', waves: [[['mage', 2], ['ninja', 2]], [['brute', 2], ['mage', 2]], [['robot', 2], ['ninja', 2], ['mage', 1]], [['zarkon', 1], ['mage', 2]]], reward: { exp: 3500, gold: 1600 } },
 ];
 export const SURVIVAL_POOL = ['thug', 'knifer', 'archer', 'brute', 'ninja', 'mage', 'robot'];
+// the practice dummy
+ENEMIES.dummy = { zh: '練習木人', en: 'Training Dummy', hp: 500, mp: 0, atk: 0.35, def: 0, spd: 55, exp: 0, gold: 0, dummy: true, skills: [],
+  look: { skin: '#d8b078', hair: '#8a5a2a', hair2: '#a87a4a', style: 'buzz', top: 'tank', c: '#c8a068', c2: '#a8804a', trim: '#e8302a', pants: '#8a6a3a', shoes: '#5a3a1a', eye: '#3a2a1a', extras: [] } };
 
 // equipment: slot glove (atk %), wear (def, hp), shoes (spd), charm (special)
 export const GEAR = {

@@ -1,7 +1,9 @@
 // Headless tests: progression rules, every skill of every hero, combo input, battles played by bots.
-import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=3';
-import * as P from '../js/progress.js?v=3';
-import * as F from '../js/fight.js?v=3';
+import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=4';
+import * as P0 from '../js/progress.js?v=4';
+import { moveList } from '../js/data.js?v=4';
+const P = { ...P0, moveList };
+import * as F from '../js/fight.js?v=4';
 
 let fail = 0;
 const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fail++; };
@@ -11,10 +13,16 @@ const DT = 1 / 60;
 {
   const pr = P.newProfile(), rec = pr.heroes.josh;
   ok(P.gainExp(rec, LEVEL_EXP(1)).length === 1 && rec.lv === 2 && rec.sp === 1, 'levelling gives a skill point');
-  ok(P.raiseSkill(rec, 1) && rec.skills[1] === 1 && rec.sp === 0, 'learning skill 2 at level 2');
-  ok(!P.canRaise(rec, 2).ok, 'skill 3 is locked by level and SP');
+  ok(P.raiseSkill(rec, 'josh', 'flamerush') && rec.learned.flamerush === 1 && rec.sp === 0 && rec.loadout[1] === 'flamerush', 'learning Flame Rush at level 2 puts it in a free slot');
+  ok(!P.canRaise(rec, 'josh', 'risingflame').ok, 'move 3 is locked by level and SP');
+  ok(!P.canRaise(rec, 'josh', 'iceball').ok, "Josh cannot learn Erin's Ice Ball");
   P.gainExp(rec, 1e6); ok(rec.lv > 20 && rec.sp > 15, `lots of EXP: lv ${rec.lv}, sp ${rec.sp}`);
-  while (P.raiseSkill(rec, 0)); ok(rec.skills[0] === 5, 'skills max out at level 5');
+  while (P.raiseSkill(rec, 'josh', 'fireball')); ok(rec.learned.fireball === 5, 'moves max out at level 5');
+  ok(P.moveList('josh').length === 15 && P.moveList('erin').some((m) => m.sk.id === 'firstaid'), 'every hero has 15 moves to choose from (6 own, 3 element, 6 for anyone)');
+  ok(P.raiseSkill(rec, 'josh', 'cyclone') && P.raiseSkill(rec, 'josh', 'phoenix'), 'learning a move anyone can learn and an extra fire move');
+  P.equipMove(rec, 'josh', 0, 'phoenix'); P.equipMove(rec, 'josh', 5, 'fireball');
+  ok(rec.loadout[0] === 'phoenix' && rec.loadout[5] === 'fireball' && P.heroLoadout(rec, 'josh')[0].id === 'phoenix', 'equipping moves into slots (and swapping)');
+  ok(!P.equipMove(rec, 'josh', 2, 'blizzard'), 'a move not learned cannot be equipped');
   const s1 = P.skillAt(HEROES.josh.skills[0], 1), s5 = P.skillAt(HEROES.josh.skills[0], 5);
   ok(s5.dmg > s1.dmg * 1.9 && s5.mp < s1.mp, `upgrades: damage ${s1.dmg} -> ${s5.dmg}, MP ${s1.mp} -> ${s5.mp}`);
   pr.gold = 1000; ok(P.buyGear(pr, 'leathergloves') && pr.gold === 780, 'buying gloves');
@@ -33,27 +41,26 @@ const DT = 1 / 60;
   ok(p.heroes.josh.lv === 12 && p.heroes.josh.sp === 13 && p.heroes.josh.equip.wear === 'jacket', `Blaze lv 12 becomes Josh lv 12 with skills refunded as ${p.heroes.josh.sp} SP and his jacket`);
   ok(p.heroes.erin.lv === 7 && p.heroes.jasper.lv === 1 && p.gold === 999 && p.cleared === 2, 'Frost becomes Erin; gold and stage progress are kept');
 }
-// 2) every skill of every hero works
+// 2) every move of every hero works (all 15 per hero, each cast from slot 1)
 for (const h of HERO_IDS) {
-  const rec = P.cpuHeroRec(h, 40);
   let dealt = 0, bad = '';
-  for (let slot = 0; slot < 6; slot++) {
-    const B = F.newBattle({ mode: 'vs', players: [{ hero: h, rec }], foes: [{ hero: 'jeff', lv: 1 }, { hero: 'erin', lv: 1 }], seed: 3 + slot });
-    const me = B.players[0]; me.mp = me.mmp = 999;
-    const close = ['upper', 'nova', 'tele'].includes(HEROES[h].skills[slot].kind);
+  for (const m of moveList(h)) {
+    const rec = P.cpuHeroRec(h, 40); rec.learned[m.sk.id] = 3; rec.loadout[0] = m.sk.id;
+    const B = F.newBattle({ mode: 'vs', players: [{ hero: h, rec }], foes: [{ hero: 'jeff', lv: 1 }, { hero: 'erin', lv: 1 }], seed: 3 });
+    const me = B.players[0]; me.mp = me.mmp = 999; B.items = [];
+    const kind = m.sk.kind, close = ['upper', 'nova', 'tele'].includes(kind) || m.sk.id === 'powerpunch';
     for (const e of B.ents) if (e.team === 1) { e.ai = null; e.x = me.x + (close ? 36 : 140); e.z = me.z; e.hp = e.mhp = 5000; e.inv = 0; }
-    if (HEROES[h].skills[slot].kind === 'heal') me.hp = 50;
+    if (kind === 'heal') me.hp = 50;
     const hp0 = B.ents.filter((e) => e.team === 1).reduce((a, e) => a + e.hp, 0), myhp0 = me.hp;
-    const inputs = [F.blankInput()]; inputs[0].skill = slot;
+    const inputs = [F.blankInput()]; inputs[0].skill = 0;
     for (let i = 0; i < 240; i++) { F.update(B, DT, inputs); inputs[0] = F.blankInput(); }
     const d = hp0 - B.ents.filter((e) => e.team === 1).reduce((a, e) => a + e.hp, 0);
-    const kind = HEROES[h].skills[slot].kind;
-    const good = ['heal'].includes(kind) ? me.hp > myhp0 : kind === 'buff' ? Object.keys(me.buffs).length > 0 || B.ents.some((e) => Object.keys(e.buffs).length) : kind === 'wall' ? true : d > 0;
-    if (!good) bad += ` ${slot}:${kind}`;
-    if (B.ents.some((e) => !Number.isFinite(e.x + e.z + e.y + e.hp))) bad += ` NaN@${slot}`;
+    const good = kind === 'heal' ? me.hp > myhp0 : kind === 'buff' ? Object.keys(me.buffs).length > 0 || B.ents.some((e) => Object.keys(e.buffs).length) : kind === 'wall' ? B.projs.some((p) => p.wall) || d > 0 : d > 0;
+    if (!good) bad += ` ${m.sk.id}:${kind}`;
+    if (B.ents.some((e) => !Number.isFinite(e.x + e.z + e.y + e.hp))) bad += ` NaN@${m.sk.id}`;
     dealt += d;
   }
-  ok(!bad, `${HEROES[h].en}: all 6 skills work (${Math.round(dealt)} damage)${bad}`);
+  ok(!bad, `${HEROES[h].en}: all ${moveList(h).length} moves work (${Math.round(dealt)} damage)${bad}`);
 }
 // 3) combo input: Defend, forward, Attack casts skill 1
 {
@@ -89,6 +96,29 @@ for (const [hero, lv, si] of [['josh', 4, 0], ['jeff', 9, 1], ['jasper', 14, 2],
 {
   const { B } = playStage('erin', 1, 4, 180);
   ok(!B.over || !B.over.win, 'a level 1 hero cannot clear the Dark Castle');
+}
+// 4b) practice mode
+{
+  const pr = P.newProfile(); const milk0 = pr.inv.milk;
+  const B = F.newBattle({ mode: 'practice', players: [{ hero: 'josh', rec: P.cpuHeroRec('josh', 20) }], inv: pr.inv, quick: ['milk', 'bomb', null], behave: 'stand', dummies: 2, seed: 5 });
+  const me = B.players[0], dums = () => B.ents.filter((e) => e.key === 'dummy');
+  ok(dums().length === 2 && dums().every((d) => !d.ai), 'two standing dummies');
+  me.hp = 10; let inp = F.blankInput(); inp.item = 0; F.update(B, DT, [inp]);
+  ok(me.hp > 10 && pr.inv.milk === milk0 && B.inv.milk === 98, 'practice items are free: the real bag is untouched');
+  const down = new Set(); let revived = 0;
+  for (let i = 0; i < 60 * 20; i++) {
+    const d = dums()[0]; me.x = d.x - 30; me.z = d.z; const k = F.blankInput(); const j = i % 90;
+    if (j === 0 || j === 15) { k.pA = 1; k.A = 1; } if (j === 60) k.skill = 0;
+    F.update(B, DT, [k]);
+    for (const x of dums()) { if (x.hp <= 0) down.add(x); else if (down.has(x) && x.hp === x.mhp) { down.delete(x); revived++; } }
+  }
+  ok(dums().length === 2 && revived >= 1 && B.practice.dmg > 500, `dummies get back up after a KO (${revived} times; damage dealt ${Math.round(B.practice.dmg)}, best combo ${B.practice.best})`);
+  ok(me.mp === me.mmp && B.practice.casts[0] > 3, `infinite MP; Fireball cast ${B.practice.casts[0]} times`);
+  ok(!B.over && B.earned.exp[0] < 1e9, 'practice never ends by itself');
+  F.setPractice(B, { behave: 'fight', n: 3 });
+  ok(dums().length === 3 && dums().every((d) => d.ai), 'switching to 3 dummies that fight back');
+  me.hp = 1; me.inv = 0; for (let i = 0; i < 60 * 15; i++) F.update(B, DT, [F.blankInput()]);
+  ok(me.hp > 0, 'you cannot lose in practice');
 }
 // 5) survival and rewards
 {

@@ -1,10 +1,10 @@
 // Little Heroes Brawl: screens (menu, heroes & skills, shop, bag, stage / VS setup, results), input, the battle loop.
-import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX } from './data.js?v=3';
-import * as P from './progress.js?v=3';
-import * as F from './fight.js?v=3';
-import { renderBattle, drawFighter, drawPortrait, drawItemIcon, setSfxLang } from './render.js?v=3';
-import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=3';
-import * as A from './audio.js?v=3';
+import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX, SKILLS, moveList } from './data.js?v=4';
+import * as P from './progress.js?v=4';
+import * as F from './fight.js?v=4';
+import { renderBattle, drawFighter, drawPortrait, drawItemIcon, setSfxLang } from './render.js?v=4';
+import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=4';
+import * as A from './audio.js?v=4';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#cv'), cx = cv.getContext('2d'), scr = $('#screen');
@@ -109,6 +109,7 @@ function menuScreen() {
   grid.appendChild(btn(`<b>🥊</b>${t('vs')}`, () => pickHeroes(vsScreen), 'big green'));
   box.appendChild(grid);
   const g2 = el('div', 'mgrid sub');
+  g2.appendChild(btn('🎯 ' + t('practice'), () => pickHeroes((ids) => startBattle({ mode: 'practice', ids, ...practiceCfg }))));
   g2.appendChild(btn('⭐ ' + t('heroes'), () => heroesScreen(HERO_IDS[0])));
   g2.appendChild(btn('🛒 ' + t('shop'), () => shopScreen('glove')));
   g2.appendChild(btn('🎒 ' + t('bag'), bagScreen));
@@ -201,6 +202,7 @@ function vsScreen(ids) {
 }
 
 // ---- heroes & skills
+const selSlot = { hero: null, i: 0 };
 function heroesScreen(id) {
   const rec = PR.heroes[id], h = HEROES[id], st = P.heroStats(rec, id);
   const tabs = el('div', 'htabs'); for (const k of HERO_IDS) tabs.appendChild(heroCard(k, heroesScreen, { sel: k === id, mini: true }));
@@ -221,21 +223,46 @@ function heroesScreen(id) {
     eq.appendChild(b);
   }
   det.appendChild(eq);
-  det.appendChild(el('div', 'sect', `${t('skills')} <span class="spdot big">✨ ${t('sp')} ${rec.sp}</span>`));
-  h.skills.forEach((s, i) => {
-    const L0 = rec.skills[i] || 0, sk = P.skillAt(s, Math.max(1, L0)), row = el('div', 'skill' + (L0 ? '' : ' unl'));
-    row.style.setProperty('--ec', ELC[s.elem] || '#888');
-    const dots = Array.from({ length: SKILL_MAX }, (_, k) => `<i class="${k < L0 ? 'on' : ''}"></i>`).join('');
-    const key = twoP ? '' : keycap(SKILL_KEYS_1P[i], 'sm');
-    row.innerHTML = `<div class="combo">${key}<small>${comboLabel(i)}</small></div>
-      <div class="sk"><b>${L(s)}</b> <span class="dots">${dots}</span><div class="sm">${skillDesc(sk)} · ${t('mpCost')} ${sk.mp}</div></div>`;
-    const can = P.canRaise(rec, i);
-    let label = L0 ? t('upgrade') : t('learn'), sub = '';
-    if (L0 >= SKILL_MAX) label = t('maxed'); else if (!can.ok) sub = can.why === 'lv' ? `${t('needLv')} ${can.need}` : t('needSp');
-    const b = btn(label + (sub ? `<small>${sub}</small>` : ''), () => { if (P.raiseSkill(rec, i)) { A.sfx('level'); save(); heroesScreen(id); } else A.sfx('nomp'); }, 'small skb' + (can.ok ? ' go' : ''));
-    if (L0 >= SKILL_MAX) b.disabled = true;
-    row.appendChild(b); det.appendChild(row);
+  // ---- the 6 move slots (each is a key and a classic combo input)
+  P.normRec(rec, id);
+  if (selSlot.hero !== id) { selSlot.hero = id; selSlot.i = Math.max(0, rec.loadout.indexOf(null)); }
+  det.appendChild(el('div', 'sect', `${t('loadout')} <span class="spdot big">✨ ${t('sp')} ${rec.sp}</span>`));
+  det.appendChild(el('div', 'sm', t('loadoutHelp')));
+  const lo = el('div', 'loadout');
+  rec.loadout.forEach((mid, i) => {
+    const sk = mid && SKILLS[mid], card = el('div', 'lslot' + (selSlot.i === i ? ' sel' : '') + (sk ? '' : ' empty'));
+    card.style.setProperty('--ec', sk ? ELC[sk.elem] || '#888' : '#bbb');
+    card.innerHTML = `<div class="lk">${twoP ? '' : keycap(SKILL_KEYS_1P[i], 'sm')}<small>${comboLabel(i)}</small></div><div class="ln">${sk ? L(sk) : t('slotEmpty')}</div>${sk ? `<div class="sm">Lv ${rec.learned[mid]} · MP ${P.skillAt(sk, rec.learned[mid]).mp}</div>` : ''}`;
+    card.onclick = () => { A.sfx('menu'); selSlot.i = i; heroesScreen(id); };
+    lo.appendChild(card);
   });
+  det.appendChild(lo);
+  // ---- every move this hero can learn
+  const groups = { sig: t('sigMoves'), elem: t('elemMoves'), uni: t('uniMoves') };
+  for (const tag of ['sig', 'elem', 'uni']) {
+    det.appendChild(el('div', 'sect sub', groups[tag]));
+    for (const m of moveList(id).filter((x) => x.tag === tag)) {
+      const s0 = m.sk, L0 = rec.learned[s0.id] || 0, sk = P.skillAt(s0, Math.max(1, L0)), slot = rec.loadout.indexOf(s0.id);
+      const row = el('div', 'skill' + (L0 ? '' : ' unl') + (slot >= 0 ? ' on' : ''));
+      row.style.setProperty('--ec', ELC[s0.elem] || '#888');
+      const dots = Array.from({ length: SKILL_MAX }, (_, k) => `<i class="${k < L0 ? 'on' : ''}"></i>`).join('');
+      row.innerHTML = `<div class="combo">${slot >= 0 ? (twoP ? `<b class="eqd">${slot + 1}</b>` : keycap(SKILL_KEYS_1P[slot], 'sm')) : `<span class="lvreq">Lv ${m.lv}</span>`}<small>${slot >= 0 ? comboLabel(slot) : ''}</small></div>
+        <div class="sk"><b>${L(s0)}</b> <span class="dots">${dots}</span><div class="sm">${skillDesc(sk)} · ${t('mpCost')} ${sk.mp}</div></div>`;
+      const can = P.canRaise(rec, id, s0.id);
+      let label = L0 ? t('upgrade') : t('learn'), sub = '';
+      if (L0 >= SKILL_MAX) label = t('maxed'); else if (!can.ok) sub = can.why === 'lv' ? `${t('needLv')} ${can.need}` : t('needSp');
+      const b = btn(label + (sub ? `<small>${sub}</small>` : ''), () => { if (P.raiseSkill(rec, id, s0.id)) { A.sfx('level'); save(); heroesScreen(id); } else A.sfx('nomp'); }, 'small skb' + (can.ok ? ' go' : ''));
+      if (L0 >= SKILL_MAX) b.disabled = true;
+      const acts = el('div', 'acts'); acts.appendChild(b);
+      if (L0) {
+        const keyName = twoP ? String(selSlot.i + 1) : SKILL_KEYS_1P[selSlot.i];
+        const e = slot >= 0 ? btn(t('unequip'), () => { P.equipMove(rec, id, slot, null); save(); heroesScreen(id); }, 'small ghost')
+          : btn(`${t('equipTo')} ${keyName}`, () => { P.equipMove(rec, id, selSlot.i, s0.id); A.sfx('buy'); const nx = rec.loadout.indexOf(null); if (nx >= 0) selSlot.i = nx; save(); heroesScreen(id); }, 'small eqb');
+        acts.appendChild(e);
+      }
+      row.appendChild(acts); det.appendChild(row);
+    }
+  }
   show([header(t('heroes'), menuScreen), tabs, det]);
 }
 function gearPicker(heroId, slot) {
@@ -309,8 +336,9 @@ function bagScreen() {
 function startBattle(o) {
   cfg = { ...cfg, last: o };
   const players = o.ids.map((id) => ({ hero: id, rec: PR.heroes[id] }));
-  B = F.newBattle({ mode: o.mode, stage: o.stage, players, foes: o.foes, ally: o.ally, inv: PR.inv, quick: PR.quick, seed: Date.now() });
-  B.cfg = o; B.bg = o.mode === 'stage' ? STAGES[o.stage].bg : o.mode === 'vs' ? 'dojo' : ['park', 'forest', 'village', 'factory', 'castle'][Math.floor(Math.random() * 5)];
+  B = F.newBattle({ mode: o.mode, stage: o.stage, players, foes: o.foes, ally: o.ally, inv: PR.inv, quick: PR.quick, seed: Date.now(), behave: o.behave, dummies: o.dummies, infMp: o.infMp });
+  hist.length = 0;
+  B.cfg = o; B.bg = o.mode === 'stage' ? STAGES[o.stage].bg : o.mode === 'vs' || o.mode === 'practice' ? 'dojo' : ['park', 'forest', 'village', 'factory', 'castle'][Math.floor(Math.random() * 5)];
   mode = 'battle'; scr.classList.add('hidden'); hubBtn(false);
   if (isTouch) { $('#touch').classList.remove('hidden'); buildSkillButtons(); }
   else showHint();
@@ -353,7 +381,29 @@ function endBattle() {
   box.appendChild(row);
   show(box, 'resScr');
 }
+// practice settings (remembered between sessions)
+let practiceCfg = { behave: 'stand', dummies: 2, infMp: true };
+try { practiceCfg = { ...practiceCfg, ...JSON.parse(localStorage.getItem('lhb_practice') || '{}') }; } catch (e) { /* ignore */ }
+function practicePause() {
+  mode = 'pause'; resetInput();
+  const box = el('div', 'card pause');
+  box.appendChild(el('div', 'big', t('practice')));
+  box.appendChild(el('div', 'sm', t('practiceNote')));
+  const P0 = B.practice, set = (o) => { Object.assign(practiceCfg, o); try { localStorage.setItem('lhb_practice', JSON.stringify(practiceCfg)); } catch (e) { /* ignore */ } F.setPractice(B, { behave: practiceCfg.behave, n: practiceCfg.dummies, infMp: practiceCfg.infMp }); practicePause(); };
+  const row = (label, opts, cur, key) => { const r = el('div', 'optrow'); r.appendChild(el('span', '', label)); for (const [k, v] of opts) r.appendChild(btn(v, () => set({ [key]: k }), 'small' + (cur === k ? ' on' : ''))); box.appendChild(r); };
+  row(t('behave'), [['stand', t('stand')], ['walk', t('walk')], ['fight', t('fightBack')]], P0.behave, 'behave');
+  row(t('dummies'), [[1, '1'], [2, '2'], [3, '3']], P0.n, 'dummies');
+  row(t('infMp'), [[true, t('on')], [false, t('off')]], P0.infMp, 'infMp');
+  const r2 = el('div', 'row');
+  r2.appendChild(btn('▶ ' + t('resume'), resume, 'big'));
+  r2.appendChild(btn('🔄 ' + t('resetP'), () => { F.setPractice(B, {}); resume(); }, 'big'));
+  box.appendChild(r2);
+  box.appendChild(btn('⭐ ' + t('editMoves'), () => { const id = B.cfg.ids[0]; menuScreen(); heroesScreen(id); }, 'ghost'));
+  box.appendChild(btn('🚪 ' + t('leaveP'), menuScreen, 'ghost'));
+  show([box, keyGuide()], 'pauseScr');
+}
 function pauseScreen() {
+  if (B && B.practice) { practicePause(); return; }
   mode = 'pause'; resetInput();
   const box = el('div', 'card pause');
   box.appendChild(el('div', 'big', t('paused')));
@@ -421,9 +471,13 @@ function readInputs() {
     for (const dir of ['l', 'r']) if (inp.dirs[dir]) { if (now - (s.lastTap[dir] || 0) < 280) s.running = dir === 'r' ? 1 : -1; s.lastTap[dir] = now; }
     if (r.x !== s.running) s.running = 0;
     inp.run = s.running || (r.run && r.x) ? 1 : 0;
+    if (B.practice && pi === 0) {
+      const push = (sym, hot) => { const now2 = performance.now(); if (hist.length && now2 - hist[hist.length - 1].t > 1500) hist.length = 0; hist.push({ s: sym, t: now2, hot }); if (hist.length > 10) hist.shift(); };
+      if (inp.pD) push('🛡'); if (inp.dirs.r) push('→'); if (inp.dirs.l) push('←'); if (inp.dirs.u) push('↑'); if (inp.dirs.d) push('↓'); if (inp.pA) push('👊'); if (inp.pJ) push('⤴');
+    }
     s.prev = r; out.push(inp);
   }
-  for (const [pi, k, v] of pressedOnce) if (out[pi]) { if (k === 'skill') out[pi].skill = v; else out[pi].item = v; }
+  for (const [pi, k, v] of pressedOnce) if (out[pi]) { if (k === 'skill') { out[pi].skill = v; if (B.practice && pi === 0) hist.push({ s: twoP ? String(v + 1) : SKILL_KEYS_1P[v], t: performance.now(), hot: true }); } else out[pi].item = v; }
   pressedOnce.length = 0;
   return out;
 }
@@ -485,7 +539,8 @@ function newDemo() {
   demo = F.newBattle({ mode: 'stage', stage: Math.floor(Math.random() * 3), players: [{ hero: ids[0], rec: P.cpuHeroRec(ids[0], 14) }, { hero: ids[1], rec: P.cpuHeroRec(ids[1], 14) }], seed: Date.now() });
   demo.bg = ['park', 'forest', 'village', 'factory', 'castle'][Math.floor(Math.random() * 5)];
 }
-const ro = (b) => ({ bg: b.bg, name, stageName: b.stage ? L(b.stage) : '', dt: 1 / 60 });
+const hist = [];
+const ro = (b) => ({ bg: b.bg, name, stageName: b.stage ? L(b.stage) : '', dt: 1 / 60, hist, keys: twoP ? ['1', '2', '3', '4', '5', '6'] : SKILL_KEYS_1P, combos: COMBOS.map((c2, i) => comboLabel(i)), skillName: (sk) => L(sk), labels: { mp: 'MP', dmg: t('dmgDone'), best: t('bestCombo'), esc: t('escSettings') } });
 function frame(now, fallback) {
   if (!fallback) requestAnimationFrame(frame);
   lastFrame = performance.now();
@@ -496,7 +551,7 @@ function frame(now, fallback) {
     while (acc >= 1 / 60 && n < 4) {
       const inputs = readInputs(); if (!inputs) break;
       F.update(B, 1 / 60, inputs); n++; acc -= 1 / 60; events();
-      if (B.over && B.overT > 2.4) { endBattle(); break; }
+      if (B.over && B.overT > 2.4 && !B.practice) { endBattle(); break; }
     }
     if (acc > 0.1) acc = 0;
     if (isTouch && B) document.querySelectorAll('#skillBtns .sbtn').forEach((b) => { const s = B.players[0].skills[+b.dataset.slot]; b.classList.toggle('low', !!s && B.players[0].mp < s.mp); });

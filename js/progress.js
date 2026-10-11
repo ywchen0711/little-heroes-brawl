@@ -1,9 +1,23 @@
 // The player's profile: hero levels, EXP, skill points, learned skills, gold, equipment, items. Pure, saved as JSON.
-import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX } from './data.js?v=3';
+import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX, SKILLS, moveList } from './data.js?v=4';
 
-export function newHeroRec() { return { lv: 1, exp: 0, sp: 0, skills: { 0: 1 }, equip: { glove: null, wear: null, shoes: null, charm: null } }; }
+export function newHeroRec(heroId) { const r = { lv: 1, exp: 0, sp: 0, equip: { glove: null, wear: null, shoes: null, charm: null } }; return heroId ? normRec(r, heroId) : r; }
+// learned moves ({ skillId: level }) and the 6-slot loadout; converts records from before loadouts existed
+export function normRec(rec, heroId) {
+  const sig = HEROES[heroId].skills;
+  if (!rec.learned) {
+    rec.learned = {};
+    const old = rec.skills || { 0: 1 };
+    for (const [i, L] of Object.entries(old)) if (sig[i] && L) rec.learned[sig[i].id] = L;
+    if (!Object.keys(rec.learned).length) rec.learned[sig[0].id] = 1;
+  }
+  delete rec.skills;
+  if (!Array.isArray(rec.loadout) || rec.loadout.length !== 6) rec.loadout = sig.map((sk) => (rec.learned[sk.id] ? sk.id : null));
+  rec.loadout = rec.loadout.map((id) => (id && rec.learned[id] ? id : null));
+  return rec;
+}
 export function newProfile() {
-  const heroes = {}; for (const id of HERO_IDS) heroes[id] = newHeroRec();
+  const heroes = {}; for (const id of HERO_IDS) heroes[id] = newHeroRec(id);
   return { v: 1, gold: 150, inv: { milk: 3, juice: 2 }, gear: {}, quick: ['milk', 'juice', null], heroes, cleared: 0, best: 0, kos: 0, battles: 0, wins: 0 };
 }
 const spUpTo = (lv) => { let n = 0; for (let l = 2; l <= lv; l++) n += l % 5 === 0 ? 2 : 1; return n; };
@@ -14,11 +28,11 @@ export function fixProfile(p) {
   for (const [old, nw] of Object.entries(OLD_HEROES)) {
     const r = p.heroes[old]; if (!r) continue;
     const cur = p.heroes[nw];
-    if (!cur || (cur.migrated && r.lv > cur.lv)) p.heroes[nw] = { lv: r.lv, exp: r.exp || 0, sp: spUpTo(r.lv), skills: { 0: 1 }, equip: { ...d.heroes[nw].equip, ...(r.equip || {}) }, migrated: true };
+    if (!cur || (cur.migrated && r.lv > cur.lv)) p.heroes[nw] = { lv: r.lv, exp: r.exp || 0, sp: spUpTo(r.lv), equip: { ...d.heroes[nw].equip, ...(r.equip || {}) }, migrated: true };
   }
   for (const old of Object.keys(OLD_HEROES)) delete p.heroes[old];
   for (const k of Object.keys(d)) if (p[k] === undefined) p[k] = d[k];
-  for (const id of HERO_IDS) { p.heroes[id] ||= newHeroRec(); p.heroes[id].equip ||= d.heroes[id].equip; p.heroes[id].skills ||= { 0: 1 }; }
+  for (const id of HERO_IDS) { p.heroes[id] ||= newHeroRec(id); p.heroes[id].equip ||= d.heroes[id].equip; normRec(p.heroes[id], id); }
   return p;
 }
 
@@ -38,11 +52,11 @@ export function enemyStats(kind, lv) {
   return { mhp: Math.round(b.hp * (b.boss ? 0.85 : 0.75) * (1 + (b.boss ? 0.03 : 0.05) * (lv - 1))), mmp: b.mp + 6 * lv, atk: b.atk * (1 + 0.025 * (lv - 1)), def: b.def + lv * 0.5, spd: b.spd, jump: 1, mpRegen: 0, crit: 0.03, revive: 0,
     exp: Math.round(b.exp * (1 + 0.2 * (lv - 1))), gold: Math.round(b.gold * (1 + 0.14 * (lv - 1))) };
 }
-// a CPU hero at a level knows the skills it could have learned
+// a CPU hero at a level knows the signature moves it could have learned
 export function cpuHeroRec(heroId, lv) {
-  const rec = newHeroRec(); rec.lv = lv;
-  SKILL_LV_REQ.forEach((req, i) => { if (lv >= req) rec.skills[i] = Math.min(SKILL_MAX, 1 + Math.floor((lv - req) / 4)); });
-  return rec;
+  const rec = newHeroRec(heroId); rec.lv = lv; rec.learned = {};
+  HEROES[heroId].skills.forEach((sk, i) => { const req = SKILL_LV_REQ[i]; if (lv >= req) rec.learned[sk.id] = Math.min(SKILL_MAX, 1 + Math.floor((lv - req) / 4)); });
+  rec.loadout = null; return normRec(rec, heroId);
 }
 
 // ------------------------------------------------------------------ experience and skills
@@ -55,16 +69,36 @@ export function gainExp(rec, n) {
   if (rec.lv >= MAX_LV) rec.exp = 0;
   return ups;
 }
-// learning a skill costs 1 SP; raising it to level L needs hero level req + 3 (L - 1) and costs 1 SP
-export function skillNeed(i, toLv) { return SKILL_LV_REQ[i] + 3 * (toLv - 1); }
-export function canRaise(rec, i) {
-  const cur = rec.skills[i] || 0;
+// learning a move costs 1 SP; raising it to level L needs the move's hero level + 3 (L - 1) and 1 SP
+export function skillNeed(lvReq, toLv) { return lvReq + 3 * (toLv - 1); }
+const entryOf = (heroId, id) => moveList(heroId).find((m) => m.sk.id === id);
+export function canRaise(rec, heroId, id) {
+  normRec(rec, heroId);
+  const m = entryOf(heroId, id); if (!m) return { ok: false, why: 'none' };
+  const cur = rec.learned[id] || 0;
   if (cur >= SKILL_MAX) return { ok: false, why: 'max' };
   if (rec.sp < 1) return { ok: false, why: 'sp' };
-  if (rec.lv < skillNeed(i, cur + 1)) return { ok: false, why: 'lv', need: skillNeed(i, cur + 1) };
+  if (rec.lv < skillNeed(m.lv, cur + 1)) return { ok: false, why: 'lv', need: skillNeed(m.lv, cur + 1) };
   return { ok: true };
 }
-export function raiseSkill(rec, i) { if (!canRaise(rec, i).ok) return false; rec.skills[i] = (rec.skills[i] || 0) + 1; rec.sp--; return true; }
+export function raiseSkill(rec, heroId, id) {
+  if (!canRaise(rec, heroId, id).ok) return false;
+  const first = !rec.learned[id];
+  rec.learned[id] = (rec.learned[id] || 0) + 1; rec.sp--;
+  if (first) { const free = rec.loadout.indexOf(null); if (free >= 0) rec.loadout[free] = id; }   // a new move goes into a free slot
+  return true;
+}
+// put a learned move into a slot (null empties it); a move already in another slot swaps places
+export function equipMove(rec, heroId, slot, id) {
+  normRec(rec, heroId);
+  if (id && !rec.learned[id]) return false;
+  const was = id ? rec.loadout.indexOf(id) : -1;
+  if (was >= 0) rec.loadout[was] = rec.loadout[slot];
+  rec.loadout[slot] = id;
+  return true;
+}
+// the moves a hero fights with, slot by slot (null = empty)
+export function heroLoadout(rec, heroId) { normRec(rec, heroId); return rec.loadout.map((id) => (id && rec.learned[id] ? skillAt(SKILLS[id], rec.learned[id]) : null)); }
 // a skill's numbers at a skill level
 export function skillAt(skill, L) {
   const k = L - 1, out = { ...skill, lv: L };

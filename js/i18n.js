@@ -33,6 +33,13 @@ const S = {
   combo: { zh: '招式', en: 'Input' }, mpCost: { zh: '魔力', en: 'MP' }, power: { zh: '威力', en: 'Power' },
   kos: { zh: '擊倒', en: 'KOs' }, wins: { zh: '勝場', en: 'Wins' }, battles: { zh: '戰鬥', en: 'Battles' },
   padOn: { zh: '🎮 偵測到搖桿', en: '🎮 Gamepad connected' },
+  practice: { zh: '練習模式', en: 'Practice' }, practiceNote: { zh: '對著木人練習出招和用道具：木人被打倒會自己站起來，道具不會用掉背包裡的。練習不會得到經驗和金幣。', en: 'Practise moves and items on training dummies: they get back up, and items here never use up your bag. Practice gives no EXP or gold.' },
+  behave: { zh: '木人', en: 'Dummies' }, stand: { zh: '站著不動', en: 'Stand still' }, walk: { zh: '走來走去', en: 'Walk around' }, fightBack: { zh: '會反擊', en: 'Fight back' },
+  dummies: { zh: '數量', en: 'How many' }, infMp: { zh: '無限魔力', en: 'Infinite MP' }, resetP: { zh: '重來', en: 'Reset' }, leaveP: { zh: '離開練習', en: 'Leave practice' }, editMoves: { zh: '去換招式', en: 'Change moves' },
+  dmgDone: { zh: '總傷害', en: 'Damage' }, bestCombo: { zh: '最高連擊', en: 'Best combo' }, escSettings: { zh: 'Esc：設定', en: 'Esc: settings' },
+  loadout: { zh: '出招設定（6 格）', en: 'Move slots (6)' }, loadoutHelp: { zh: '先點一格，再到下面的招式清單按「裝備」。每一格對應一個按鍵和一個經典指令。', en: 'Pick a slot, then press Equip on a move below. Each slot has a key and a classic combo input.' },
+  slotEmpty: { zh: '（空）', en: '(empty)' }, equipTo: { zh: '裝到', en: 'Equip to' },
+  sigMoves: { zh: '專屬招式', en: 'Signature moves' }, elemMoves: { zh: '同屬性招式', en: 'Element moves' }, uniMoves: { zh: '通用招式（大家都能學）', en: 'Moves anyone can learn' },
   howtoText: { zh: `<b>基本操作（1 人）</b><br>
 左手 WASD 移動，右手放在 J K L：J 攻擊、K 跳、L 防禦。技能就在旁邊：上排 U I O、下排 M , . 分別是第 1～6 招。左手 Q E R 用快捷道具，Shift 跑步。<br>
 習慣方向鍵的話：方向鍵移動 + Z 攻擊 X 跳 C 防禦 也可以。<br>
@@ -43,7 +50,7 @@ const S = {
 連按兩下方向（或按住 Shift）= 跑步。跑步中攻擊 = 衝撞，跑步中跳 = 飛身跳。連打三拳第三下會把敵人打飛。<br>
 撿東西：站在球棒、石頭、木箱、牛奶上按攻擊。拿著石頭或木箱再按攻擊就會丟出去。<br><br>
 <b>必殺技</b><br>
-直接按技能鍵，或用經典指令 <b>防禦 → 方向 → 攻擊/跳</b>（例如 防→前→攻 = D>A）。<br><br>
+直接按技能鍵，或用經典指令 <b>防禦 → 方向 → 攻擊/跳</b>（例如 防→前→攻 = D>A）。<br>每位英雄有 15 招可以學：6 招專屬、3 招同屬性、6 招大家都能學。在「英雄與技能」裡選 6 招裝到 6 個格子。想熟悉出招，就去<b>練習模式</b>打木人！<br><br>
 <b>成長</b><br>
 打架得到經驗值，升級會得到技能點，在「英雄與技能」學新招、把技能升到 5 級。<br>
 打倒敵人會掉金幣，可以在商店買拳套、衣服、鞋子、護身符和道具。每位英雄有自己的等級。`,
@@ -57,7 +64,7 @@ Phone: stick bottom left, attack / jump / defend bottom right, skill buttons top
 Double-tap a direction (or hold Shift) to run. Attack while running = charge; jump while running = flying jump. The 3rd punch of a combo knocks foes flying.<br>
 Pick things up: stand on a bat, stone, crate or milk and press attack. Holding a stone or crate, attack throws it.<br><br>
 <b>Special moves</b><br>
-Press a skill key, or use the classic <b>Defend → direction → Attack/Jump</b> input (e.g. D>A).<br><br>
+Press a skill key, or use the classic <b>Defend → direction → Attack/Jump</b> input (e.g. D>A).<br>Every hero can learn 15 moves: 6 signature, 3 of their element and 6 anyone can learn. Pick 6 for the 6 slots in Heroes & Skills, and try them on the dummies in <b>Practice</b>!<br><br>
 <b>Growing stronger</b><br>
 Fighting gives EXP. Each level gives skill points: learn new moves and upgrade them to level 5 in Heroes & Skills.<br>
 Beaten foes drop gold for gloves, clothes, shoes, charms and items in the Shop. Every hero levels separately.` },

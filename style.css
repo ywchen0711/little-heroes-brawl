@@ -239,3 +239,19 @@ kbd.hot { background: var(--gold); }
 .sbtn { border: 2.5px solid var(--ink); border-radius: 4px; background: var(--ec); box-shadow: 3px 3px 0 var(--ink); text-shadow: 1px 1px 0 var(--ink); }
 #stick { background: radial-gradient(circle, rgba(20,16,30,.18) 1px, transparent 1.4px) 0 0 / 6px 6px, rgba(246,241,228,.45); border: 3px solid var(--ink); }
 .gpf { outline: 4px solid var(--red) !important; }
+
+/* move slots and practice */
+.mgrid.sub { grid-template-columns: repeat(4, 1fr); }
+.loadout { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 6px 0 4px; }
+.lslot { background: var(--paper); border: 3px solid var(--ink); border-top: 8px solid var(--ec); border-radius: 4px; padding: 6px; cursor: pointer; text-align: center; box-shadow: 4px 4px 0 var(--ink); min-height: 92px; }
+.lslot.sel { outline: 4px solid var(--red); outline-offset: 2px; background: #fff3b0; }
+.lslot.empty { border-style: dashed; }
+.lslot .lk small { display: block; font-size: 11px; color: var(--dim); }
+.lslot .ln { font-weight: 900; font-size: 14px; margin-top: 2px; }
+.sect.sub { font-size: 17px; color: var(--ink); margin-top: 14px; }
+.skill.on { background: #fff3b0; }
+.skill .acts { display: flex; flex-direction: column; gap: 4px; }
+.skill .lvreq { font-weight: 900; font-size: 12px; color: var(--dim); }
+.skill .eqd { font-size: 18px; }
+.btn.eqb { background: var(--gold); }
+@media (max-width: 680px) { .loadout { grid-template-columns: repeat(3, 1fr); } .mgrid.sub { grid-template-columns: repeat(2, 1fr); } }

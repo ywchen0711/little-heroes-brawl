@@ -1,6 +1,6 @@
 // Drawing in a manga style: inked characters with hard cel shading and screentone, ink-and-paper stage backgrounds
 // tinted per stage, speed lines, impact frames, sound-effect lettering, glowing special moves, and a manga-panel HUD.
-import { W, H, GROUND, ZD } from './data.js?v=3';
+import { W, H, GROUND, ZD } from './data.js?v=4';
 
 let c = null;
 const INK = '#14101e', PAPER = '#f6f1e4', GLOW = 'source-over';   // normal blending: additive light would wash the paper white
@@ -108,6 +108,7 @@ export function drawFighter(ctx, def, x, y, face, scale, o = {}) {
   if (st === 'lie') { c.translate(-8, -3); c.rotate(-Math.PI / 2); }
   else if (st === 'fly') { const k = Math.min(1, (o.t || 0) * 3); c.translate(0, -12); c.rotate(-0.4 - k * 0.9); c.translate(0, 12); }
   else if (st === 'rise') { const k = Math.max(0, 1 - (o.t || 0) / 0.3); c.rotate(-Math.PI / 2 * k); }
+  if (def.dummy) { drawDummy(o); c.restore(); c = prev; return; }
   const P = poseFor(o);
   const hipY = -RIG.hip + P.by, neckY = hipY - RIG.torso, robot = L.top === 'robot';
   c.translate(0, hipY); c.rotate(P.lean); c.translate(0, -hipY);
@@ -146,6 +147,24 @@ export function drawFighter(ctx, def, x, y, face, scale, o = {}) {
   arm(6, neckY + 4, P.aF, sleeve, false, o.hold);
   if (o.glow && (st === 'cast' || st === 'upper')) { c.globalCompositeOperation = GLOW; const g = c.createRadialGradient(20, neckY + 6, 1, 20, neckY + 6, 20); g.addColorStop(0, rgba(col(o.glow, 1), 0.95)); g.addColorStop(1, rgba(col(o.glow), 0)); c.fillStyle = g; c.beginPath(); c.arc(20, neckY + 6, 20, 0, 7); c.fill(); c.globalCompositeOperation = 'source-over'; }
   c.restore(); c = prev;
+}
+// a wooden training dummy: a post, a stitched sack body with a target, peg arms and a round head
+function drawDummy(o) {
+  const st = o.st, t = o.t || 0, wob = st === 'hurt' ? Math.sin(t * 40) * 0.18 * Math.max(0, 1 - t * 3) : st === 'stun' ? Math.sin((o.anim || 0) * 6) * 0.08 : 0;
+  rr(-12, -4, 24, 6, 2, '#6a4a2a', INK, 2.2);
+  rr(-4, -46, 8, 44, 2, '#8a5a2a', INK, 2.4); hatch(-4, -46, 4, 44, 3, rgba(INK, 0.4));
+  c.save(); c.translate(0, -46); c.rotate(wob); c.translate(0, 46);
+  limb(-12, -68, -27, -62, 6, '#a87a4a'); limb(12, -68, 27, -74, 6, '#a87a4a');
+  rr(-15, -84, 30, 42, 10, '#d8b078', INK, 2.8);
+  c.save(); c.beginPath(); c.rect(-15, -84, 11, 42); c.fillStyle = tone(INK, 3.2, 0.8, 0.45); c.fill(); c.restore();
+  for (const [r, f] of [[10, PAPER], [7, '#e8302a'], [4, PAPER], [1.8, '#e8302a']]) { circ(2, -63, r, f); c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.arc(2, -63, r, 0, 7); c.stroke(); }
+  c.strokeStyle = INK; c.lineWidth = 1; c.setLineDash([2, 2]); c.beginPath(); c.moveTo(-15, -74); c.lineTo(15, -74); c.moveTo(-15, -50); c.lineTo(15, -50); c.stroke(); c.setLineDash([]);
+  circ(1, -97, 13, INK); circ(1, -97, 11, '#d8b078');
+  const hit = st === 'hurt' || st === 'fly' || st === 'lie' || st === 'stun';
+  if (hit) { for (const ex of [-4, 6]) { line(ex - 2.5, -100, ex + 2.5, -95, 1.8); line(ex + 2.5, -100, ex - 2.5, -95, 1.8); } }
+  else { line(-6, -98, -2, -98, 1.8); line(4, -98, 8, -98, 1.8); }
+  line(-3, -91, 5, -91, 1.4);
+  c.restore();
 }
 function torso(L, hipY, neckY) {
   const sh = 12, wa = 8.5, top = neckY + 1, bot = hipY + 2;
@@ -579,7 +598,35 @@ function mbar(x, y, w, h, k, fill, trail) {
   if (trail != null && trail > k) { c.fillStyle = INK; c.fillRect(x + 3, y + 2.5, Math.max(0, (w - 7) * Math.min(1, trail)), h - 5); }
   if (k > 0) { c.save(); poly([[x + 4, y], [x + w, y], [x + w - 4, y + h], [x, y + h]]); c.clip(); c.fillStyle = fill; c.fillRect(x + 2, y + 2.5, Math.max(0, (w - 5) * Math.min(1, k)), h - 5); c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(x + 2, y + 2.5, Math.max(0, (w - 5) * Math.min(1, k)), 2); c.restore(); }
 }
+function practiceHud(B, o) {
+  const P = B.practice, x = W - 214, y = 54, rows = B.players[0].skills;
+  path([[x, y], [x + 206, y], [x + 202, y + 22 + rows.length * 25], [x - 4, y + 22 + rows.length * 25]], PAPER, INK, 3);
+  txtOut('PRACTICE', x + 8, y + 18, 17, '#e8302a');
+  c.font = `700 10px ${FONT}`; c.fillStyle = INK; c.textAlign = 'right'; c.fillText(o.labels.mp, x + 196, y + 16);
+  rows.forEach((sk, i) => {
+    const ry = y + 24 + i * 25, flash = P.last && P.last.slot === i && B.t - P.last.t < 0.6;
+    if (flash) { c.fillStyle = rgba('#ffd23a', 0.8); c.fillRect(x + 2, ry - 1, 198, 23); }
+    rr(x + 6, ry + 1, 20, 20, 3, PAPER, INK, 1.8); c.font = `900 13px ${FONT}`; c.textAlign = 'center'; c.fillStyle = INK; c.fillText(o.keys[i] || '', x + 16, ry + 16);
+    c.textAlign = 'left'; c.font = `700 10px ${FONT}`; c.fillStyle = rgba(INK, 0.7); c.fillText(o.combos[i], x + 30, ry + 9);
+    c.font = `800 12px ${FONT}`; c.fillStyle = sk ? INK : rgba(INK, 0.4); c.fillText(sk ? o.skillName(sk) : '—', x + 30, ry + 20);
+    if (sk) { c.textAlign = 'right'; c.font = `700 10px ${FONT}`; c.fillStyle = '#2a6ae8'; c.fillText(String(sk.mp), x + 196, ry + 9); c.fillStyle = P.casts[i] ? '#2ea84a' : rgba(INK, 0.35); c.font = `900 12px ${FONT}`; c.fillText(P.casts[i] ? '✓' + P.casts[i] : '·', x + 196, ry + 21); }
+  });
+  // stats and the input history
+  const sy = y + 30 + rows.length * 25;
+  path([[x, sy], [x + 206, sy], [x + 203, sy + 40], [x - 3, sy + 40]], PAPER, INK, 2.6);
+  c.textAlign = 'left'; c.font = `800 11px ${FONT}`; c.fillStyle = INK;
+  c.fillText(`${o.labels.dmg}: ${Math.round(P.dmg)}`, x + 8, sy + 16); c.fillText(`${o.labels.best}: ${P.best}`, x + 8, sy + 32);
+  c.fillStyle = rgba(INK, 0.6); c.textAlign = 'right'; c.fillText(o.labels.esc, x + 198, sy + 32);
+  const hist = o.hist || [];
+  if (hist.length) {
+    const w = hist.length * 30 + 14, hx = W / 2 - w / 2, hy = H - 46;
+    path([[hx, hy], [hx + w, hy], [hx + w - 4, hy + 34], [hx - 4, hy + 34]], PAPER, INK, 2.6);
+    hist.forEach((h, i) => { const age = (performance.now() - h.t) / 1000; c.globalAlpha = Math.max(0.35, 1 - age * 0.4); rr(hx + 9 + i * 30, hy + 5, 25, 24, 4, h.hot ? '#ffd23a' : PAPER, INK, 2); c.font = `900 15px ${FONT}`; c.textAlign = 'center'; c.fillStyle = INK; c.fillText(h.s, hx + 21.5 + i * 30, hy + 23); });
+    c.globalAlpha = 1;
+  }
+}
 function hud(B, o) {
+  if (B.practice) practiceHud(B, o);
   B.players.forEach((p, i) => {
     const x = 14 + i * 250, y = 12, accent = p.def.color || '#e8302a';
     path([[x, y], [x + 238, y], [x + 230, y + 60], [x - 4, y + 60]], PAPER, INK, 3);

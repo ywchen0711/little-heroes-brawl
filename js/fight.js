@@ -1,7 +1,7 @@
 // The brawl itself (pure, no DOM): 2.5D movement, punches and combos, defending, knockdowns, skills, elements,
 // weapons lying around, AI, summons, waves, rewards. main.js feeds one input object per player per step.
-import { W, ZD, GROUND, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=3';
-import { heroStats, enemyStats, skillAt, cpuHeroRec } from './progress.js?v=3';
+import { W, ZD, GROUND, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=4';
+import { heroStats, enemyStats, skillAt, cpuHeroRec, heroLoadout } from './progress.js?v=4';
 
 const GRAV = 1500, JUMP = 470, FALL_MAX = 70, ZT = 16;
 function mkRng(seed) { let s = seed >>> 0 || 9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -21,7 +21,7 @@ function mkFighter(B, o) {
   B.ents.push(e);
   return e;
 }
-function heroSkills(rec, heroId) { return HEROES[heroId].skills.map((s, i) => (rec.skills[i] ? skillAt(s, rec.skills[i]) : null)); }
+function heroSkills(rec, heroId) { return heroLoadout(rec, heroId); }
 export function addHero(B, heroId, rec, o = {}) {
   return mkFighter(B, { team: o.team ?? 0, kind: 'hero', key: heroId, def: HEROES[heroId], pi: o.pi, ai: o.ai, lv: rec.lv, x: o.x ?? 120, z: o.z ?? ZD / 2,
     face: o.face ?? 1, stats: heroStats(rec, heroId), skills: heroSkills(rec, heroId) });
@@ -40,6 +40,11 @@ export function newBattle(opts) {
   const B = { mode: opts.mode, t: 0, ents: [], projs: [], fx: [], texts: [], items: [], ev: [], rnd: mkRng(opts.seed || Date.now()), Wd: opts.mode === 'vs' ? 900 : 1300,
     cam: 0, wave: 0, waveT: 1.2, over: null, overT: 0, earned: { exp: opts.players.map(() => 0), gold: 0, kos: 0 }, inv: opts.inv || {}, quick: opts.quick || [], banner: null, dropT: 12, stageLv: 1 };
   B.players = opts.players.map((p, i) => addHero(B, p.hero, p.rec, { pi: i, x: 120 + i * 40, z: ZD / 2 + (i ? 30 : -10) }));
+  if (opts.mode === 'practice') {
+    B.Wd = 900; B.waveT = 99999; B.inv = Object.fromEntries(Object.keys(ITEMS).map((k) => [k, 99]));
+    B.practice = { dmg: 0, best: 0, casts: [0, 0, 0, 0, 0, 0], behave: opts.behave || 'stand', n: opts.dummies || 2, infMp: opts.infMp !== false };
+    spawnDummies(B);
+  }
   if (opts.mode === 'stage') { B.stage = STAGES[opts.stage]; B.stageLv = B.stage.lv; B.waves = B.stage.waves; }
   if (opts.mode === 'vs') {
     if (opts.ally) addHero(B, opts.ally.hero, cpuHeroRec(opts.ally.hero, opts.ally.lv), { ai: mkAI(B, 0.75), x: 90, z: ZD - 20 });
@@ -47,7 +52,7 @@ export function newBattle(opts) {
     B.foeLv = opts.foes.reduce((a, f) => a + f.lv, 0);
     B.waveT = 99999;
   }
-  // a few things to pick up
+  // a few things to pick up (in practice too: picking up and throwing is part of the practice)
   for (let i = 0; i < 3; i++) dropItem(B, ['stone', 'bat', 'crate', 'knife'][Math.floor(B.rnd() * 4)], 200 + B.rnd() * (B.Wd - 300), B.rnd() * ZD, 0);
   return B;
 }
@@ -111,7 +116,7 @@ export function hit(B, tgt, a) {
   tgt.hp -= dmg; tgt.flash = 0.1;
   B.hitstop = Math.max(B.hitstop || 0, a.skill ? 0.055 : 0.035);                    // a tiny freeze sells the impact
   const who = src && (src.pi >= 0 ? src : src.owner && src.owner.pi >= 0 ? src.owner : null);
-  if (who) { who.hits = B.t - (who.lastHitT ?? -9) < 1.1 ? (who.hits || 0) + 1 : 1; who.lastHitT = B.t; }
+  if (who) { who.hits = B.t - (who.lastHitT ?? -9) < 1.1 ? (who.hits || 0) + 1 : 1; who.lastHitT = B.t; if (B.practice) { B.practice.dmg += dmg; B.practice.best = Math.max(B.practice.best, who.hits); } }
   txt(B, tgt, dmg, crit ? '#ffd040' : a.skill ? '#ffffff' : '#ffe8e0');
   fx(B, { k: 'hit', x: tgt.x - dir * 6, z: tgt.z, y: tgt.y + tgt.h * 0.6, elem: a.elem, heavy: !!(a.knock || (a.fall || 0) >= 100), skill: !!a.skill });
   sfx(B, a.skill ? 'hitbig' : 'hit');
@@ -147,7 +152,7 @@ function onKO(B, e, src) {
   if (e.koDone) return; e.koDone = true;
   if (e.team !== 0 || e.kind === 'hero') { B.impact = e.boss ? 0.12 : 0.08; B.impactX = e.x; B.impactY = GROUND + e.z - e.y - e.h * 0.5; }
   sfx(B, 'ko');
-  if (e.team !== 0 && e.kind !== 'summon' && !e.summon) {
+  if (e.team !== 0 && e.kind !== 'summon' && !e.summon && !B.practice) {
     B.earned.kos++;
     const share = e.exp / Math.max(1, B.players.length);
     B.players.forEach((p, i) => { B.earned.exp[i] += share; });
@@ -199,6 +204,7 @@ export function castSkill(B, e, slot) {
   if (!sk || !canAct(e) || e.y > 0) return false;
   if (e.mp < sk.mp) { if (e.pi >= 0) { txt(B, e, 'MP!', '#6ab0ff'); sfx(B, 'nomp'); } return false; }
   e.mp -= sk.mp; setSt(e, 'cast'); e.sk = sk; e.skDone = 0; e.vx = e.vz = 0; e.atk = null;
+  if (e.pi >= 0) { B.ev.push({ t: 'cast', pi: e.pi, slot }); if (B.practice) { B.practice.casts[slot]++; B.practice.last = { slot, t: B.t }; } }
   if (sk.kind === 'dash') { setSt(e, 'dash'); e.atk = { hit: new Set() }; }
   if (sk.kind === 'upper') { setSt(e, 'upper'); e.atk = { hit: new Set() }; e.vy = 420; e.vx = e.face * 80; }
   if (sk.kind === 'flip') { setSt(e, 'flip'); e.vy = 340; e.vx = -e.face * 220; }
@@ -241,7 +247,7 @@ function skillEffect(B, e, dt) {
     case 'rain': if (once(1, 0.15)) {
       const tg = nearestFoe(B, e) || { x: e.x + e.face * 150, z: e.z };
       for (let i = 0; i < sk.n; i++) {
-        const big = sk.big, x = tg.x + (big ? 0 : (B.rnd() - 0.5) * 220), z = Math.max(0, Math.min(ZD, tg.z + (big ? 0 : (B.rnd() - 0.5) * 80)));
+        const big = sk.big, sc = big || (i === 0 && e.team === 0) ? 0 : 1, x = tg.x + sc * (B.rnd() - 0.5) * 170, z = Math.max(0, Math.min(ZD, tg.z + sc * (B.rnd() - 0.5) * 60));   // the first drop lands right on the target
         B.projs.push({ team: e.team, src: e, kind: 'fall', elem: sk.elem, arrow: sk.arrow, big, x: x - (big ? 120 : 40), z, y: 380 + i * 50, vx: big ? 140 : 40, vz: 0, vy: big ? -380 : -520, r: big ? 60 : 22, dmg: sk.dmg, life: 3, hit: new Set(), t: 0, face: 1 });
       }
       sfx(B, 'cast');
@@ -335,6 +341,12 @@ export function useItem(B, e, slot) {
 // ------------------------------------------------------------------ AI: fills an input object
 function aiInput(B, e, dt) {
   const ai = e.ai, inp = blankInput();
+  if (e.passive) {
+    ai.think -= dt;
+    if (ai.think <= 0 || ai.tx == null) { ai.think = 1.5 + B.rnd() * 2; ai.tx = 220 + B.rnd() * (B.Wd - 340); ai.tz = B.rnd() * ZD; }
+    if (Math.abs(ai.tx - e.x) > 12) inp.x = Math.sign(ai.tx - e.x); if (Math.abs(ai.tz - e.z) > 8) inp.z = Math.sign(ai.tz - e.z);
+    return inp;
+  }
   ai.think -= dt; ai.cd -= dt; ai.punchT -= dt;
   if (ai.think <= 0 || !ai.tgt || !alive(ai.tgt)) { ai.tgt = nearestFoe(B, e); ai.think = 0.3 + B.rnd() * 0.4; ai.zoff = (B.rnd() - 0.5) * 24; ai.keepAway = e.def.ranged && B.rnd() < 0.7 ? 150 + B.rnd() * 80 : 0; }
   const t = ai.tgt; if (!t) return inp;
@@ -446,6 +458,7 @@ function step(B, e, dt, inp) {
     case 'fly': physics(B, e, dt); if (e.y <= 0 && e.t > 0.05) { e.y = 0; e.vy = 0; setSt(e, 'lie'); e.vx *= 0.3; B.shake = Math.max(B.shake || 0, e.def.big ? 0.15 : 0.05); sfx(B, 'thud'); fx(B, { k: 'land', x: e.x, z: e.z, y: 0, life: 0.4 }); } return;
     case 'lie':
       e.vx *= Math.pow(0.01, dt); physics(B, e, dt);
+      if (e.hp <= 0 && B.practice) { if (e.t > 0.9) { e.hp = e.mhp; e.koDone = false; setSt(e, 'rise'); } return; }
       if (e.hp <= 0) {
         if (e.stats.revive && !e.revived && e.t > 1.4) { e.revived = true; e.hp = Math.round(e.mhp * e.stats.revive); setSt(e, 'rise'); fx(B, { k: 'heal', x: e.x, z: e.z, y: 0, life: 1 }); txt(B, e, 'REVIVE', '#ffd040'); sfx(B, 'heal'); return; }
         if (e.t > 1.2 && (e.team !== 0 || e.kind !== 'hero')) { e.dead = true; } return;
@@ -621,6 +634,7 @@ export function update(B, dt, inputs) {
   B.cam += (Math.max(0, Math.min(B.Wd - W, cx)) - B.cam) * Math.min(1, dt * 4);
   // waves and the end
   if (B.over) { B.overT += dt; return; }
+  if (B.practice) { if (B.practice.infMp) for (const p of B.players) p.mp = p.mmp; return; }
   const foes = B.ents.filter((e) => e.team !== 0 && !e.dead && e.kind !== 'hawk' && !e.summon);
   if (B.mode !== 'vs' && !foes.length) {
     const last = B.mode === 'stage' && B.wave >= B.waves.length;
@@ -651,4 +665,24 @@ export const result = (B) => ({ win: !!(B.over && B.over.win), exp: B.earned.exp
 export function botInput(B, e, dt, skill = 0.9) {
   const keep = e.ai; e.ai = e.bot || (e.bot = mkAI(B, skill));
   const inp = aiInput(B, e, dt); e.ai = keep; return inp;
+}
+
+// ------------------------------------------------------------------ practice mode
+function spawnDummies(B) {
+  const P = B.practice, lv = B.players[0]?.lv || 1;
+  B.ents = B.ents.filter((e) => e.key !== 'dummy');
+  for (let i = 0; i < P.n; i++) {
+    const d = addEnemy(B, 'dummy', lv, { x: 330 + i * 90, z: ZD * (0.3 + 0.4 * ((i % 2) ? 1 : 0)) + (i > 1 ? 20 : 0), face: -1 });
+    d.inv = 0;
+    if (P.behave === 'stand') d.ai = null;
+    else if (P.behave === 'walk') { d.passive = true; d.ai = mkAI(B, 0.2); }
+    else d.ai = mkAI(B, 0.3);
+  }
+}
+// change the practice settings (behave: 'stand' | 'walk' | 'fight', n dummies, infinite MP) and reset the arena
+export function setPractice(B, o = {}) {
+  Object.assign(B.practice, o);
+  B.projs = []; B.fx = []; B.texts = [];
+  for (const p of B.players) { p.hp = p.mhp; p.mp = p.mmp; p.st = 'idle'; p.t = 0; p.x = 120 + p.pi * 40; p.z = ZD / 2; p.vx = p.vz = p.vy = 0; p.y = 0; p.frozenT = 0; p.stunT = 0; }
+  spawnDummies(B);
 }

@@ -18,14 +18,14 @@ The heroes and story are original.
 
 ## Heroes
 
-Four heroes, each levelling up separately, each with 6 special moves:
+Four heroes, each levelling up separately. Each has 6 signature moves, and every hero can also learn 3 more moves of their element plus 6 moves anyone can learn (Power Punch, Cyclone Kick, Chi Blast, Shuriken, First Aid, Chi Cannon). That's 15 moves to choose from, and you pick 6 for your move slots in Heroes & Skills.
 
 | Hero | Style | Moves |
 |---|---|---|
-| **Josh** | Flame brawler, hits hardest | Fireball, Flame Rush, Rising Flame, Fire Pillars, Inferno, Meteor Rain |
-| **Jasper** | Lightning ninja, fastest | Spark Shot, Thunder Step, Gale Slash, Chain Lightning, Shadow Clone, Lightning Strike |
-| **Jeff** | Earth powerhouse, toughest | Rock Toss, Boulder Roll, Dragon Uppercut, Earth Spikes, Earthquake, Stone Skin |
-| **Erin** | Ice mage, freezes and heals | Ice Ball, Ice Spikes, Healing Light, Frost Beam, Blizzard, Icicle Rain |
+| **Josh** | Flame brawler, hits hardest | Fireball, Flame Rush, Rising Flame, Fire Pillars, Inferno, Meteor Rain · *extra:* Blaze Kick, Fire Spin, Phoenix |
+| **Jasper** | Lightning ninja, fastest | Spark Shot, Thunder Step, Gale Slash, Chain Lightning, Shadow Clone, Lightning Strike · *extra:* Thunder Fist, Spark Storm, Blink Strike |
+| **Jeff** | Earth powerhouse, toughest | Rock Toss, Boulder Roll, Dragon Uppercut, Earth Spikes, Earthquake, Stone Skin · *extra:* Rock Wall, Stomp, Rockslide |
+| **Erin** | Ice mage, freezes and heals | Ice Ball, Ice Spikes, Healing Light, Frost Beam, Blizzard, Icicle Rain · *extra:* Frost Nova, Ice Guard, Glacier Line |
 
 ## Growing stronger
 
@@ -39,6 +39,7 @@ Four heroes, each levelling up separately, each with 6 special moves:
 
 - **Story:** 5 stages, each with 4 waves ending in a boss. The stages are the Park, the Forest, Ninja Village, the Robot Factory and the Dark Castle; the bosses are Bruno the Bully, the Bandit King, the Shadow Master, the Mega Bot and Dark Lord Zarkon.
 - **Survival:** endless waves, with a boss every fifth wave.
+- **Practice:** train on wooden dummies that get back up. They can stand still, walk around or fight back, and you choose 1–3 of them. MP can be infinite, and items are free (your bag is never used). A panel lists your 6 moves with their keys and combo inputs and ticks off each one you land, with an input history, damage and best combo. Practice gives no EXP or gold.
 - **VS:** fight 1 to 3 CPU heroes at your level, or a stronger or weaker level, with an optional CPU ally.
 - **Arena items:** bats, knives, stones, crates and milk bottles lie around the arena and fall from the sky.
 
@@ -80,7 +81,9 @@ npm test     # node tools/test.mjs
 
 `tools/test.mjs` checks:
 - the progression rules;
-- that every skill of every hero works (and that old 8-hero saves migrate);
+- that all 15 moves of every hero work, and that learning, equipping and swapping moves works;
+- that old saves migrate;
+- practice mode: dummies get back up, practice items are free, MP is infinite, and you can't lose;
 - the combo input and the punch combo;
 - that bots at the recommended levels clear all five stages, while a level-1 hero can't clear the last one;
 - survival, rewards, and two players clearing a stage together.
