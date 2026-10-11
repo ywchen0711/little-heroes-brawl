@@ -1,7 +1,7 @@
 // The brawl itself (pure, no DOM): 2.5D movement, punches and combos, defending, knockdowns, skills, elements,
 // weapons lying around, AI, summons, waves, rewards. main.js feeds one input object per player per step.
-import { W, ZD, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=1';
-import { heroStats, enemyStats, skillAt, cpuHeroRec } from './progress.js?v=1';
+import { W, ZD, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=2';
+import { heroStats, enemyStats, skillAt, cpuHeroRec } from './progress.js?v=2';
 
 const GRAV = 1500, JUMP = 470, FALL_MAX = 70, ZT = 16;
 function mkRng(seed) { let s = seed >>> 0 || 9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -109,6 +109,9 @@ export function hit(B, tgt, a) {
   if (tgt.buffs.armor) dmg *= 1 - tgt.buffs.armor.amt * 0.5;
   dmg = Math.max(1, Math.round(dmg));
   tgt.hp -= dmg; tgt.flash = 0.1;
+  B.hitstop = Math.max(B.hitstop || 0, a.skill ? 0.055 : 0.035);                    // a tiny freeze sells the impact
+  const who = src && (src.pi >= 0 ? src : src.owner && src.owner.pi >= 0 ? src.owner : null);
+  if (who) { who.hits = B.t - (who.lastHitT ?? -9) < 1.1 ? (who.hits || 0) + 1 : 1; who.lastHitT = B.t; }
   txt(B, tgt, dmg, crit ? '#ffd040' : a.skill ? '#ffffff' : '#ffe8e0');
   fx(B, { k: 'hit', x: tgt.x - dir * 6, z: tgt.z, y: tgt.y + tgt.h * 0.6, elem: a.elem });
   sfx(B, a.skill ? 'hitbig' : 'hit');
@@ -232,7 +235,7 @@ function skillEffect(B, e, dt) {
     case 'nova': if (once(1, 0.25)) {
       fx(B, { k: 'nova', x: e.x, z: e.z, y: e.y, r: sk.r, elem: sk.elem, life: 0.5 });
       areaHit(B, e, { x: e.x, z: e.z, rx: sk.r, rz: sk.r * 0.55, y1: sk.ground ? 8 : 140, ell: true }, { ...base, unblock: true, kx: 220, ky: 300 });
-      sfx(B, sk.elem === 'smoke' ? 'poof' : 'boom'); if (sk.ground) B.shake = 0.4;
+      sfx(B, sk.elem === 'smoke' ? 'poof' : 'boom'); if (sk.ground) B.shake = 0.4; B.flash = 0.14; B.flashCol = sk.elem;
     } if (t > 0.6) setSt(e, 'idle'); break;
     case 'rain': if (once(1, 0.15)) {
       const tg = nearestFoe(B, e) || { x: e.x + e.face * 150, z: e.z };
@@ -247,7 +250,7 @@ function skillEffect(B, e, dt) {
       const x0 = e.face > 0 ? e.x : e.x - 560;
       areaHit(B, e, { x: x0 + 280, z: e.z, rx: 280, rz: 20, y0: e.y + 10, y1: e.y + 60 }, { ...base, kx: 260, ky: 260 });
       for (const p of B.projs) if (p.team !== e.team && Math.abs(p.z - e.z) < 22 && p.x > x0 && p.x < x0 + 560) p.life = 0;
-      sfx(B, 'beam');
+      sfx(B, 'beam'); B.flash = 0.1; B.flashCol = sk.elem;
     } if (t > 0.75) setSt(e, 'idle'); break;
     case 'wall': if (once(1, 0.2)) {
       B.projs.push({ team: e.team, src: e, kind: 'wall', elem: sk.elem, x: e.x + e.face * 60, z: e.z, y: 0, vx: 0, vz: 0, vy: 0, r: 22, hp: sk.hp, dmg: sk.dmg, life: 7, hit: new Set(), t: 0, face: e.face, wall: true });
@@ -597,6 +600,8 @@ function stepFx(B, dt) {
 // ------------------------------------------------------------------ the battle step
 // inputs: array indexed by player index (pi)
 export function update(B, dt, inputs) {
+  if (B.flash > 0) B.flash -= dt;
+  if (B.hitstop > 0) { B.hitstop -= dt; return; }
   B.t += dt; if (B.shake > 0) B.shake -= dt;
   if (B.banner) { B.banner.t -= dt; if (B.banner.t <= 0) B.banner = null; }
   for (const e of [...B.ents]) {

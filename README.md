@@ -8,18 +8,14 @@ It plays in the browser, in Chinese or English, with keyboard, gamepad or touch,
 
 ## Heroes
 
-There are 8 original heroes, and each one levels up separately. Every hero has 6 special moves, cast with the classic *Defend → direction → Attack/Jump* inputs.
+Four heroes, each levelling up separately, each with 6 special moves:
 
 | Hero | Style | Moves |
 |---|---|---|
-| 炎仔 Blaze | Fire, hits hard | Fireball, Flame Rush, Rising Flame, Fire Pillars, Inferno, Meteor Rain |
-| 冰冰 Frost | Ice, freezes foes | Ice Ball, Ice Spikes, Ice Wall, Frost Beam, Blizzard, Icicle Rain |
-| 雷霆 Volt | Lightning, fastest | Spark Shot, Thunder Step, Chain Lightning, Lightning Strike, Static Burst, Overcharge |
-| 阿凱 Kai | Martial artist | Chi Blast, Whirlwind Kick, Dragon Uppercut, Chi Spread, Chi Cannon, Iron Body |
-| 小羽 Robin | Archer | Quick Arrow, Triple Arrow, Backflip Shot, Piercing Shot, Arrow Rain, Hawk Partner |
-| 小影 Shade | Ninja | Shuriken, Shadow Step, Gale Slash, Smoke Bomb, Shadow Clone, Homing Kunai |
-| 小蓮 Bloom | Healer | Leaf Blade, Healing Light, Vine Snare, Petal Storm, Guardian Bloom, Spring of Life |
-| 石頭 Rocky | Big and tough | Rock Toss, Boulder Roll, Earth Spikes, Earthquake, Stone Skin, Giant Meteor |
+| **Josh** | Flame brawler, hits hardest | Fireball, Flame Rush, Rising Flame, Fire Pillars, Inferno, Meteor Rain |
+| **Jasper** | Lightning ninja, fastest | Spark Shot, Thunder Step, Gale Slash, Chain Lightning, Shadow Clone, Lightning Strike |
+| **Jeff** | Earth powerhouse, toughest | Rock Toss, Boulder Roll, Dragon Uppercut, Earth Spikes, Earthquake, Stone Skin |
+| **Erin** | Ice mage, freezes and heals | Ice Ball, Ice Spikes, Healing Light, Frost Beam, Blizzard, Icicle Rain |
 
 ## Growing stronger
 
@@ -38,17 +34,29 @@ There are 8 original heroes, and each one levels up separately. Every hero has 6
 
 ## Controls
 
-| | 1 player | 2 players (1P / 2P) | Gamepad | Touch |
-|---|---|---|---|---|
-| Move | Arrows | WASD / Arrows | Stick / d-pad | Stick |
-| Attack | Z or J | F / J | X / □ | 👊 |
-| Jump | X or K | G / K | A / ✕ | ⤴ |
-| Defend | C or L | H / L | B / ○ | 🛡 |
-| Skills | 1–6, or combos | combos | combos | skill buttons |
-| Items | Q W E | R T Y / U I O | LB RB Y | item buttons |
-| Pause | Esc / P | Esc / P | Start | ⏸ |
+The keyboard layout keeps both hands in a natural resting position.
 
-- Double-tap a direction to run.
+**1 player**
+
+| | Keys |
+|---|---|
+| Move | **W A S D** (left hand) — or the arrow keys |
+| Attack / Jump / Defend | **J / K / L** (right hand resting on the home row) — or Z / X / C |
+| Skills 1–3 | **U I O** (the row right above J K L) |
+| Skills 4–6 | **M , .** (the row right below J K L) |
+| Items | **Q E R** (next to WASD) |
+| Run | hold **Shift**, or double-tap a direction |
+| Pause | **Esc** |
+
+**2 players on one keyboard:** 1P uses **WASD + F G H** (items R T Y, skills 1–6). 2P uses the **arrows + K L ;**, or numpad 1 2 3 (items I O P).
+
+**Gamepad:** the stick or d-pad moves. Attack is X / □, jump is A / ✕, defend is B / ○. Items are on LB, RB and Y. RT runs and Start pauses.
+
+**Phone:** a stick on the left and attack / jump / defend buttons on the right, with skill and item buttons.
+
+Every move can also be cast with the classic *Defend → direction → Attack/Jump* input, e.g. D>A.
+
+- Double-tap a direction or hold Shift to run.
 - Attack while running for a charge, and jump while running for a flying jump.
 - The third punch of a combo knocks the foe flying.
 
@@ -62,7 +70,7 @@ npm test     # node tools/test.mjs
 
 `tools/test.mjs` checks:
 - the progression rules;
-- that every skill of every hero works;
+- that every skill of every hero works (and that old 8-hero saves migrate);
 - the combo input and the punch combo;
 - that bots at the recommended levels clear all five stages, while a level-1 hero can't clear the last one;
 - survival, rewards, and two players clearing a stage together.

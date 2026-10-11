@@ -1,13 +1,22 @@
 // The player's profile: hero levels, EXP, skill points, learned skills, gold, equipment, items. Pure, saved as JSON.
-import { HEROES, HERO_IDS, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX } from './data.js?v=1';
+import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX } from './data.js?v=2';
 
 export function newHeroRec() { return { lv: 1, exp: 0, sp: 0, skills: { 0: 1 }, equip: { glove: null, wear: null, shoes: null, charm: null } }; }
 export function newProfile() {
   const heroes = {}; for (const id of HERO_IDS) heroes[id] = newHeroRec();
   return { v: 1, gold: 150, inv: { milk: 3, juice: 2 }, gear: {}, quick: ['milk', 'juice', null], heroes, cleared: 0, best: 0, kos: 0, battles: 0, wins: 0 };
 }
+const spUpTo = (lv) => { let n = 0; for (let l = 2; l <= lv; l++) n += l % 5 === 0 ? 2 : 1; return n; };
 export function fixProfile(p) {
   const d = newProfile();
+  // saves from the 8-hero version: the best old hero becomes the new one (skills are refunded as skill points)
+  p.heroes ||= {};
+  for (const [old, nw] of Object.entries(OLD_HEROES)) {
+    const r = p.heroes[old]; if (!r) continue;
+    const cur = p.heroes[nw];
+    if (!cur || (cur.migrated && r.lv > cur.lv)) p.heroes[nw] = { lv: r.lv, exp: r.exp || 0, sp: spUpTo(r.lv), skills: { 0: 1 }, equip: { ...d.heroes[nw].equip, ...(r.equip || {}) }, migrated: true };
+  }
+  for (const old of Object.keys(OLD_HEROES)) delete p.heroes[old];
   for (const k of Object.keys(d)) if (p[k] === undefined) p[k] = d[k];
   for (const id of HERO_IDS) { p.heroes[id] ||= newHeroRec(); p.heroes[id].equip ||= d.heroes[id].equip; p.heroes[id].skills ||= { 0: 1 }; }
   return p;

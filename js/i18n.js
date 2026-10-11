@@ -11,7 +11,7 @@ const S = {
   title: { zh: '小英雄齊打交', en: 'Little Heroes Brawl' }, sub: { zh: '打架升級 · 學技能 · 買裝備', en: 'Fight · Level up · Learn skills · Gear up' },
   story: { zh: '闖關模式', en: 'Story' }, survival: { zh: '生存模式', en: 'Survival' }, vs: { zh: '對戰模式', en: 'VS Battle' },
   heroes: { zh: '英雄與技能', en: 'Heroes & Skills' }, shop: { zh: '商店', en: 'Shop' }, bag: { zh: '背包', en: 'Bag' }, howto: { zh: '玩法說明', en: 'How to Play' },
-  players: { zh: '玩家人數', en: 'Players' }, p1: { zh: '1 人', en: '1 Player' }, p2: { zh: '2 人（同一台）', en: '2 Players (same device)' },
+  players: { zh: '玩家人數', en: 'Players' }, p1: { zh: '1 人遊戲', en: '1 Player' }, p2: { zh: '2 人（同一台）', en: '2 Players (same device)' },
   back: { zh: '返回', en: 'Back' }, close: { zh: '關閉', en: 'Close' }, start: { zh: '開始！', en: 'Fight!' }, gold: { zh: '金幣', en: 'Gold' },
   chooseHero: { zh: '選擇英雄', en: 'Choose a hero' }, chooseHero2: { zh: '2P 選擇英雄', en: '2P: choose a hero' }, chooseStage: { zh: '選擇關卡', en: 'Choose a stage' },
   recLv: { zh: '建議等級', en: 'Recommended Lv' }, locked: { zh: '未解鎖', en: 'Locked' }, cleared: { zh: '已通關', en: 'Cleared' },
@@ -33,34 +33,34 @@ const S = {
   combo: { zh: '招式', en: 'Input' }, mpCost: { zh: '魔力', en: 'MP' }, power: { zh: '威力', en: 'Power' },
   kos: { zh: '擊倒', en: 'KOs' }, wins: { zh: '勝場', en: 'Wins' }, battles: { zh: '戰鬥', en: 'Battles' },
   padOn: { zh: '🎮 偵測到搖桿', en: '🎮 Gamepad connected' },
-  howtoText: { zh: `<b>基本操作</b><br>
-1 人：方向鍵 移動　Z 攻擊　X 跳　C 防禦　（J / K / L 也可以）<br>
-2 人：1P 用 WASD + F 攻擊 G 跳 H 防禦；2P 用 方向鍵 + J 攻擊 K 跳 L 防禦<br>
-搖桿：左類比 / 十字鍵 移動　X / □ 攻擊　A / ✕ 跳　B / ○ 防禦　LB · RB · Y 道具　Start 暫停<br>
-手機：左下搖桿，右下 攻 / 跳 / 防 按鈕，上方技能鍵<br><br>
+  howtoText: { zh: `<b>基本操作（1 人）</b><br>
+左手 WASD 移動，右手放在 J K L：J 攻擊、K 跳、L 防禦。技能就在旁邊：上排 U I O、下排 M , . 分別是第 1～6 招。左手 Q E R 用快捷道具，Shift 跑步。<br>
+習慣方向鍵的話：方向鍵移動 + Z 攻擊 X 跳 C 防禦 也可以。<br>
+2 人同一台：1P 用 WASD + F 攻擊 G 跳 H 防禦；2P 用方向鍵 + K 攻擊 L 跳 ; 防禦（或數字鍵盤 1 2 3）。<br>
+搖桿：左類比 / 十字鍵 移動　X / □ 攻擊　A / ✕ 跳　B / ○ 防禦　LB · RB · Y 道具　RT 跑步　Start 暫停<br>
+手機：左下搖桿，右下 攻 / 跳 / 防 按鈕，右上技能鍵<br><br>
 <b>動作</b><br>
-連按兩下方向 = 跑步。跑步中攻擊 = 衝撞，跑步中跳 = 飛身跳。連打三拳第三下會把敵人打飛。<br>
+連按兩下方向（或按住 Shift）= 跑步。跑步中攻擊 = 衝撞，跑步中跳 = 飛身跳。連打三拳第三下會把敵人打飛。<br>
 撿東西：站在球棒、石頭、木箱、牛奶上按攻擊。拿著石頭或木箱再按攻擊就會丟出去。<br><br>
-<b>招式（技能）</b><br>
-像小朋友齊打交一樣：<b>防禦 → 方向 → 攻擊/跳</b>。例如 防→前→攻 (D>A)、防→上→攻 (D^A)、防→下→跳 (DvJ)。<br>
-1 人模式也可以直接按 1～6 放技能（手機按技能鍵）。快捷道具：Q / W / E。<br><br>
+<b>必殺技</b><br>
+直接按技能鍵，或用經典指令 <b>防禦 → 方向 → 攻擊/跳</b>（例如 防→前→攻 = D>A）。<br><br>
 <b>成長</b><br>
 打架得到經驗值，升級會得到技能點，在「英雄與技能」學新招、把技能升到 5 級。<br>
-打倒敵人會掉金幣，可以在商店買拳套、衣服、鞋子、護身符和道具（牛奶、果汁、便當…）。每位英雄有自己的等級。`,
-  en: `<b>Controls</b><br>
-1 player: arrows move · Z attack · X jump · C defend (J / K / L also work)<br>
-2 players: 1P uses WASD + F attack, G jump, H defend; 2P uses arrows + J attack, K jump, L defend<br>
-Gamepad: stick / d-pad move · X / □ attack · A / ✕ jump · B / ○ defend · LB · RB · Y items · Start pause<br>
-Phone: stick bottom left, attack / jump / defend bottom right, skill buttons on top<br><br>
+打倒敵人會掉金幣，可以在商店買拳套、衣服、鞋子、護身符和道具。每位英雄有自己的等級。`,
+  en: `<b>Controls (1 player)</b><br>
+Left hand on WASD to move, right hand resting on J K L: J attack, K jump, L defend. Skills sit right next to them: U I O on the row above and M , . below are moves 1–6. Q E R (left hand) use quick items; Shift runs.<br>
+Prefer the arrows? Arrows + Z attack, X jump, C defend work too.<br>
+2 players on one keyboard: 1P uses WASD + F attack, G jump, H defend; 2P uses the arrows + K attack, L jump, ; defend (or numpad 1 2 3).<br>
+Gamepad: stick / d-pad move · X / □ attack · A / ✕ jump · B / ○ defend · LB · RB · Y items · RT run · Start pause<br>
+Phone: stick bottom left, attack / jump / defend bottom right, skill buttons top right<br><br>
 <b>Moves</b><br>
-Double-tap a direction to run. Attack while running = charge; jump while running = flying jump. The 3rd punch of a combo knocks foes flying.<br>
+Double-tap a direction (or hold Shift) to run. Attack while running = charge; jump while running = flying jump. The 3rd punch of a combo knocks foes flying.<br>
 Pick things up: stand on a bat, stone, crate or milk and press attack. Holding a stone or crate, attack throws it.<br><br>
-<b>Special moves (skills)</b><br>
-Like the classic: <b>Defend → direction → Attack/Jump</b>. For example D>A, D^A, DvJ.<br>
-In 1-player mode you can also press 1–6 to cast (skill buttons on phones). Quick items: Q / W / E.<br><br>
+<b>Special moves</b><br>
+Press a skill key, or use the classic <b>Defend → direction → Attack/Jump</b> input (e.g. D>A).<br><br>
 <b>Growing stronger</b><br>
 Fighting gives EXP. Each level gives skill points: learn new moves and upgrade them to level 5 in Heroes & Skills.<br>
-Beaten foes drop gold: buy gloves, clothes, shoes, charms and items (milk, juice, bento...) in the Shop. Every hero levels separately.` },
+Beaten foes drop gold for gloves, clothes, shoes, charms and items in the Shop. Every hero levels separately.` },
 };
 export const t = (k, vars) => { let s = L(S[k]) || k; if (vars) for (const v in vars) s = s.replace('{' + v + '}', vars[v]); return s; };
 
@@ -85,6 +85,6 @@ export function skillDesc(s) {
   if (s.heal) parts.push(`+${s.heal} HP`);
   if (s.stat) parts.push(`${L(BUFF[s.stat])} ${Math.round(s.amt * 100)}% · ${s.dur}s${s.team ? (lang === 'zh' ? '（全隊）' : ' (team)') : ''}`);
   if (s.summon) parts.push(`${s.dur}s`);
-  if (ELEM[s.elem]) parts.push(L(ELEM[s.elem]));
+  if (ELEM[s.elem] && s.kind !== 'heal' && s.kind !== 'buff') parts.push(L(ELEM[s.elem]));
   return parts.join(' · ');
 }
