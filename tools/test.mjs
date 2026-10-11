@@ -1,7 +1,7 @@
 // Headless tests: progression rules, every skill of every hero, combo input, battles played by bots.
-import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=2';
-import * as P from '../js/progress.js?v=2';
-import * as F from '../js/fight.js?v=2';
+import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=3';
+import * as P from '../js/progress.js?v=3';
+import * as F from '../js/fight.js?v=3';
 
 let fail = 0;
 const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fail++; };

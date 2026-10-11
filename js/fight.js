@@ -1,7 +1,7 @@
 // The brawl itself (pure, no DOM): 2.5D movement, punches and combos, defending, knockdowns, skills, elements,
 // weapons lying around, AI, summons, waves, rewards. main.js feeds one input object per player per step.
-import { W, ZD, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=2';
-import { heroStats, enemyStats, skillAt, cpuHeroRec } from './progress.js?v=2';
+import { W, ZD, GROUND, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=3';
+import { heroStats, enemyStats, skillAt, cpuHeroRec } from './progress.js?v=3';
 
 const GRAV = 1500, JUMP = 470, FALL_MAX = 70, ZT = 16;
 function mkRng(seed) { let s = seed >>> 0 || 9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -14,7 +14,7 @@ function mkFighter(B, o) {
   const e = {
     id: NID++, team: o.team, kind: o.kind, key: o.key, def: o.def, name: o.def, pi: o.pi ?? -1, ai: o.ai || null, lv: o.lv || 1,
     x: o.x, z: o.z, y: 0, vx: 0, vz: 0, vy: 0, face: o.face || 1, st: 'idle', t: 0, hp: st.mhp, mhp: st.mhp, mp: st.mmp, mmp: st.mmp, stats: st,
-    w: big ? 36 : 26, h: big ? 74 : 60, skills: o.skills || [], combo: 0, comboT: 9, fall: 0, inv: 0.8, frozenT: 0, freezeImm: 0, stunT: 0, burnT: 0,
+    w: big ? 36 : 26, h: big ? 84 : 70, skills: o.skills || [], combo: 0, comboT: 9, fall: 0, inv: 0.8, frozenT: 0, freezeImm: 0, stunT: 0, burnT: 0,
     buffs: {}, hold: o.hold || null, cb: { s: 0, t: 0, dir: null }, dead: false, exp: st.exp || 0, gold: st.gold || 0, boss: !!o.def.boss,
     armor: o.def.armor || 0, life: o.life || 0, summon: o.summon || null, owner: o.owner || null, revived: false, guard: 0, anim: Math.random() * 9, flash: 0,
   };
@@ -113,7 +113,7 @@ export function hit(B, tgt, a) {
   const who = src && (src.pi >= 0 ? src : src.owner && src.owner.pi >= 0 ? src.owner : null);
   if (who) { who.hits = B.t - (who.lastHitT ?? -9) < 1.1 ? (who.hits || 0) + 1 : 1; who.lastHitT = B.t; }
   txt(B, tgt, dmg, crit ? '#ffd040' : a.skill ? '#ffffff' : '#ffe8e0');
-  fx(B, { k: 'hit', x: tgt.x - dir * 6, z: tgt.z, y: tgt.y + tgt.h * 0.6, elem: a.elem });
+  fx(B, { k: 'hit', x: tgt.x - dir * 6, z: tgt.z, y: tgt.y + tgt.h * 0.6, elem: a.elem, heavy: !!(a.knock || (a.fall || 0) >= 100), skill: !!a.skill });
   sfx(B, a.skill ? 'hitbig' : 'hit');
   // rewards for the player's side
   if (src && src.team === 0) { const pi = src.pi >= 0 ? src.pi : src.owner?.pi ?? 0; if (B.earned.exp[pi] != null) B.earned.exp[pi] += dmg / 18; }
@@ -145,6 +145,7 @@ function knockDown(B, e, vx, vy) {
 function onKO(B, e, src) {
   e.hp = 0;
   if (e.koDone) return; e.koDone = true;
+  if (e.team !== 0 || e.kind === 'hero') { B.impact = e.boss ? 0.12 : 0.08; B.impactX = e.x; B.impactY = GROUND + e.z - e.y - e.h * 0.5; }
   sfx(B, 'ko');
   if (e.team !== 0 && e.kind !== 'summon' && !e.summon) {
     B.earned.kos++;
@@ -442,7 +443,7 @@ function step(B, e, dt, inp) {
     case 'hurt': e.vx *= Math.pow(0.02, dt); if (e.t > (e.hurtDur || 0.3)) setSt(e, 'idle'); physics(B, e, dt); return;
     case 'stun': setSt(e, 'idle'); break;
     case 'frozen': setSt(e, 'idle'); break;
-    case 'fly': physics(B, e, dt); if (e.y <= 0 && e.t > 0.05) { e.y = 0; e.vy = 0; setSt(e, 'lie'); e.vx *= 0.3; B.shake = Math.max(B.shake || 0, e.def.big ? 0.15 : 0.05); sfx(B, 'thud'); } return;
+    case 'fly': physics(B, e, dt); if (e.y <= 0 && e.t > 0.05) { e.y = 0; e.vy = 0; setSt(e, 'lie'); e.vx *= 0.3; B.shake = Math.max(B.shake || 0, e.def.big ? 0.15 : 0.05); sfx(B, 'thud'); fx(B, { k: 'land', x: e.x, z: e.z, y: 0, life: 0.4 }); } return;
     case 'lie':
       e.vx *= Math.pow(0.01, dt); physics(B, e, dt);
       if (e.hp <= 0) {

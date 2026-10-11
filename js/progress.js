@@ -1,5 +1,5 @@
 // The player's profile: hero levels, EXP, skill points, learned skills, gold, equipment, items. Pure, saved as JSON.
-import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX } from './data.js?v=2';
+import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX } from './data.js?v=3';
 
 export function newHeroRec() { return { lv: 1, exp: 0, sp: 0, skills: { 0: 1 }, equip: { glove: null, wear: null, shoes: null, charm: null } }; }
 export function newProfile() {

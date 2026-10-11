@@ -1,10 +1,10 @@
 // Little Heroes Brawl: screens (menu, heroes & skills, shop, bag, stage / VS setup, results), input, the battle loop.
-import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX } from './data.js?v=2';
-import * as P from './progress.js?v=2';
-import * as F from './fight.js?v=2';
-import { renderBattle, drawFighter, drawPortrait, drawItemIcon } from './render.js?v=2';
-import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=2';
-import * as A from './audio.js?v=2';
+import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX } from './data.js?v=3';
+import * as P from './progress.js?v=3';
+import * as F from './fight.js?v=3';
+import { renderBattle, drawFighter, drawPortrait, drawItemIcon, setSfxLang } from './render.js?v=3';
+import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=3';
+import * as A from './audio.js?v=3';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#cv'), cx = cv.getContext('2d'), scr = $('#screen');
@@ -476,7 +476,7 @@ function menuPad(dt) {
 }
 
 // ------------------------------------------------------------------ loop
-function applyLang() { document.documentElement.lang = getLang() === 'zh' ? 'zh-Hant' : 'en'; document.title = t('title') + (getLang() === 'zh' ? ' Little Heroes Brawl' : ''); }
+function applyLang() { setSfxLang(getLang()); document.documentElement.lang = getLang() === 'zh' ? 'zh-Hant' : 'en'; document.title = t('title') + (getLang() === 'zh' ? ' Little Heroes Brawl' : ''); }
 applyLang();
 let last = 0, acc = 0, lastFrame = 0, artT = 0;
 setInterval(() => { const n = performance.now(); if (!document.hidden && n - lastFrame > 120) frame(n, true); }, 40);
@@ -489,7 +489,7 @@ const ro = (b) => ({ bg: b.bg, name, stageName: b.stage ? L(b.stage) : '', dt: 1
 function frame(now, fallback) {
   if (!fallback) requestAnimationFrame(frame);
   lastFrame = performance.now();
-  const dt = Math.min(0.1, (now - last) / 1000 || 0); last = now;
+  const dt = Math.max(0, Math.min(0.1, (now - last) / 1000 || 0)); last = Math.max(last, now);   // timer and animation-frame clocks can disagree
   if (mode === 'battle') {
     acc += dt; let n = 0;
     if (window.__freeze) acc = 0;

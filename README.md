@@ -6,6 +6,16 @@ A 2.5D brawler for kids in the spirit of the classic *Little Fighter* games, wit
 
 It plays in the browser, in Chinese or English, with keyboard, gamepad or touch, alone or with two players on the same device.
 
+## Look
+
+The art follows the style of action manga such as *One Punch Man*:
+- inked characters with hard cel shading, screentone and sharp manga eyes;
+- paper-and-ink stages with halftone shading;
+- speed lines and focus lines;
+- sound-effect lettering (砰！轟！ / BAM! BOOM!) and short impact frames on knockouts.
+
+The heroes and story are original.
+
 ## Heroes
 
 Four heroes, each levelling up separately, each with 6 special moves:
