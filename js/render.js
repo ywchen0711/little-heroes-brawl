@@ -1,6 +1,6 @@
 // Drawing in a manga style: inked characters with hard cel shading and screentone, ink-and-paper stage backgrounds
 // tinted per stage, speed lines, impact frames, sound-effect lettering, glowing special moves, and a manga-panel HUD.
-import { W, H, GROUND, ZD } from './data.js?v=4';
+import { W, H, GROUND, ZD } from './data.js?v=5';
 
 let c = null;
 const INK = '#14101e', PAPER = '#f6f1e4', GLOW = 'source-over';   // normal blending: additive light would wash the paper white

@@ -1,7 +1,7 @@
 // The brawl itself (pure, no DOM): 2.5D movement, punches and combos, defending, knockdowns, skills, elements,
 // weapons lying around, AI, summons, waves, rewards. main.js feeds one input object per player per step.
-import { W, ZD, GROUND, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=4';
-import { heroStats, enemyStats, skillAt, cpuHeroRec, heroLoadout } from './progress.js?v=4';
+import { W, ZD, GROUND, HEROES, ENEMIES, STAGES, SURVIVAL_POOL, ITEMS, PICKUPS, COMBOS } from './data.js?v=5';
+import { heroStats, enemyStats, skillAt, cpuHeroRec, heroLoadout } from './progress.js?v=5';
 
 const GRAV = 1500, JUMP = 470, FALL_MAX = 70, ZT = 16;
 function mkRng(seed) { let s = seed >>> 0 || 9; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
@@ -434,16 +434,18 @@ function step(B, e, dt, inp) {
   if (e.life) { e.life -= dt; if (e.life <= 0 && !e.dead) { e.dead = true; e.gone = true; fx(B, { k: 'poof', x: e.x, z: e.z, y: e.y, life: 0.5 }); return; } }
   const grounded = e.y <= 0 && e.vy <= 0;
   const spd = e.stats.spd * (e.buffs.power ? 1.2 : 1) * (e.hold && PICKUPS[e.hold.kind]?.heavy ? 0.8 : 1);
-  // combo input (D, direction, A/J)
+  // combo input: Defend, then (optionally) a direction, then Attack / Jump. Forgiving: presses on the same frame
+  // count, a direction already held counts, and no direction at all means forward (D>A / D>J)
   if (inp && e.pi >= 0) {
-    const cb = e.cb; cb.t += dt; if (cb.t > 0.5) cb.s = 0;
+    const cb = e.cb; cb.t += dt; if (cb.t > 0.6) cb.s = 0;
     if (inp.pD) { cb.s = 1; cb.t = 0; cb.dir = null; }
-    else if (cb.s === 1) { const d = inp.dirs; const dir = d.r ? '>r' : d.l ? '>l' : d.u ? '^' : d.d ? 'v' : null; if (dir) { cb.s = 2; cb.dir = dir; cb.t = 0; } }
-    else if (cb.s === 2 && (inp.pA || inp.pJ)) {
-      const code = 'D' + cb.dir[0] + (inp.pA ? 'A' : 'J'), slot = COMBOS.indexOf(code);
-      if (cb.dir === '>r') e.face = 1; if (cb.dir === '>l') e.face = -1;
+    if (cb.s >= 1) { const d = inp.dirs || {}; const dir = d.u ? '^' : d.d ? 'v' : d.r ? '>r' : d.l ? '>l' : null; if (dir) { cb.s = 2; cb.dir = dir; cb.t = 0; } }
+    if (cb.s >= 1 && (inp.pA || inp.pJ)) {
+      const dir = cb.dir || (inp.z < 0 ? '^' : inp.z > 0 ? 'v' : inp.x > 0 ? '>r' : inp.x < 0 ? '>l' : '>');
+      const code = 'D' + dir[0] + (inp.pA ? 'A' : 'J'), slot = COMBOS.indexOf(code);
+      if (dir === '>r') e.face = 1; if (dir === '>l') e.face = -1;
       cb.s = 0;
-      if (slot >= 0 && e.skills[slot] && (canAct(e) || e.st === 'punch' && e.t > 0.12)) { if (e.st === 'punch') setSt(e, 'idle'); if (castSkill(B, e, slot)) { inp.pA = inp.pJ = 0; } }
+      if (slot >= 0 && e.skills[slot] && (canAct(e) || e.st === 'punch' && e.t > 0.12)) { if (e.st === 'punch') setSt(e, 'idle'); if (castSkill(B, e, slot)) { inp.pA = inp.pJ = 0; e.bufA = 0; e.bufJ = 0; } }
     }
   }
   // status

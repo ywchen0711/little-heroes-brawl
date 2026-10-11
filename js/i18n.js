@@ -50,7 +50,7 @@ const S = {
 連按兩下方向（或按住 Shift）= 跑步。跑步中攻擊 = 衝撞，跑步中跳 = 飛身跳。連打三拳第三下會把敵人打飛。<br>
 撿東西：站在球棒、石頭、木箱、牛奶上按攻擊。拿著石頭或木箱再按攻擊就會丟出去。<br><br>
 <b>必殺技</b><br>
-直接按技能鍵，或用經典指令 <b>防禦 → 方向 → 攻擊/跳</b>（例如 防→前→攻 = D>A）。<br>每位英雄有 15 招可以學：6 招專屬、3 招同屬性、6 招大家都能學。在「英雄與技能」裡選 6 招裝到 6 個格子。想熟悉出招，就去<b>練習模式</b>打木人！<br><br>
+直接按技能鍵，或用經典指令：<b>依序按 防禦 › 方向 › 攻擊/跳</b>。例如 Jeff 的投石：按 L（防）→ 往前 → J（攻）。往前的招式可以省略方向：直接 防 → 攻 也行。<br>每位英雄有 15 招可以學：6 招專屬、3 招同屬性、6 招大家都能學。在「英雄與技能」裡選 6 招裝到 6 個格子。想熟悉出招，就去<b>練習模式</b>打木人！<br><br>
 <b>成長</b><br>
 打架得到經驗值，升級會得到技能點，在「英雄與技能」學新招、把技能升到 5 級。<br>
 打倒敵人會掉金幣，可以在商店買拳套、衣服、鞋子、護身符和道具。每位英雄有自己的等級。`,
@@ -64,7 +64,7 @@ Phone: stick bottom left, attack / jump / defend bottom right, skill buttons top
 Double-tap a direction (or hold Shift) to run. Attack while running = charge; jump while running = flying jump. The 3rd punch of a combo knocks foes flying.<br>
 Pick things up: stand on a bat, stone, crate or milk and press attack. Holding a stone or crate, attack throws it.<br><br>
 <b>Special moves</b><br>
-Press a skill key, or use the classic <b>Defend → direction → Attack/Jump</b> input (e.g. D>A).<br>Every hero can learn 15 moves: 6 signature, 3 of their element and 6 anyone can learn. Pick 6 for the 6 slots in Heroes & Skills, and try them on the dummies in <b>Practice</b>!<br><br>
+Press a skill key, or use the classic input: <b>press Defend › a direction › Attack/Jump in order</b>. For example Jeff's Rock Toss: L (defend), forward, J (attack). For the forward moves you can skip the direction: Defend then Attack works too.<br>Every hero can learn 15 moves: 6 signature, 3 of their element and 6 anyone can learn. Pick 6 for the 6 slots in Heroes & Skills, and try them on the dummies in <b>Practice</b>!<br><br>
 <b>Growing stronger</b><br>
 Fighting gives EXP. Each level gives skill points: learn new moves and upgrade them to level 5 in Heroes & Skills.<br>
 Beaten foes drop gold for gloves, clothes, shoes, charms and items in the Shop. Every hero levels separately.` },

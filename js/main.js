@@ -1,10 +1,10 @@
 // Little Heroes Brawl: screens (menu, heroes & skills, shop, bag, stage / VS setup, results), input, the battle loop.
-import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX, SKILLS, moveList } from './data.js?v=4';
-import * as P from './progress.js?v=4';
-import * as F from './fight.js?v=4';
-import { renderBattle, drawFighter, drawPortrait, drawItemIcon, setSfxLang } from './render.js?v=4';
-import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=4';
-import * as A from './audio.js?v=4';
+import { W, H, HEROES, HERO_IDS, ENEMIES, STAGES, GEAR, ITEMS, SLOTS, COMBOS, SKILL_MAX, SKILLS, moveList } from './data.js?v=5';
+import * as P from './progress.js?v=5';
+import * as F from './fight.js?v=5';
+import { renderBattle, drawFighter, drawPortrait, drawItemIcon, setSfxLang } from './render.js?v=5';
+import { t, L, getLang, setLang, skillDesc } from './i18n.js?v=5';
+import * as A from './audio.js?v=5';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#cv'), cx = cv.getContext('2d'), scr = $('#screen');
@@ -80,7 +80,8 @@ function itemIcon(id, size = 40) {
   });
 }
 const keycap = (k, cls = '') => `<kbd class="${cls}">${k}</kbd>`;
-const comboLabel = (i) => COMBOS[i].replace('D', '🛡').replace('>', '→').replace('^', '↑').replace('v', '↓').replace('A', '👊').replace('J', '⤴');
+// a combo spelled out: Defend › direction › Attack/Jump (the direction is a word so the arrow is not read as "then")
+const comboLabel = (i) => { const c = COMBOS[i], zh = getLang() === 'zh'; const dir = { '>': zh ? '前' : 'Fwd', '^': zh ? '上' : 'Up', 'v': zh ? '下' : 'Down' }[c[1]]; return `🛡›${dir}›${c[2] === 'A' ? '👊' : '⤴'}`; };
 
 // ------------------------------------------------------------------ screens
 function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }

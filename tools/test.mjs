@@ -1,9 +1,9 @@
 // Headless tests: progression rules, every skill of every hero, combo input, battles played by bots.
-import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=4';
-import * as P0 from '../js/progress.js?v=4';
-import { moveList } from '../js/data.js?v=4';
+import { HEROES, HERO_IDS, STAGES, GEAR, LEVEL_EXP } from '../js/data.js?v=5';
+import * as P0 from '../js/progress.js?v=5';
+import { moveList } from '../js/data.js?v=5';
 const P = { ...P0, moveList };
-import * as F from '../js/fight.js?v=4';
+import * as F from '../js/fight.js?v=5';
 
 let fail = 0;
 const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fail++; };
@@ -76,6 +76,22 @@ for (const h of HERO_IDS) {
   const p = B2.players[0], f = B2.ents.find((e) => e.team === 1); f.ai = null; f.x = p.x + 30; f.z = p.z; f.hp = f.mhp = 3000; f.inv = 0;
   for (let i = 0; i < 60; i++) F.update(B2, DT, [{ ...F.blankInput(), pA: i % 16 === 0 ? 1 : 0, A: 1 }]);
   ok(f.st === 'fly' || f.st === 'lie' || f.st === 'rise', 'three punches knock the foe down (' + f.st + ')');
+}
+// 3b) the combo input is forgiving: Jeff's Rock Toss (slot 1, D>A) from every reasonable way of pressing it
+{
+  const tryIt = (seq) => {
+    const B = F.newBattle({ mode: 'practice', players: [{ hero: 'jeff', rec: P.cpuHeroRec('jeff', 10) }], behave: 'stand', dummies: 1, seed: 9 });
+    const me = B.players[0];
+    for (const st of seq) { F.update(B, DT, [{ ...F.blankInput(), ...st, dirs: st.dirs || {} }]); }
+    for (let i = 0; i < 5; i++) F.update(B, DT, [F.blankInput()]);
+    return B.practice.casts[0];
+  };
+  ok(tryIt([{ pD: 1, D: 1 }, {}, { dirs: { r: 1 }, x: 1 }, {}, { pA: 1, A: 1 }]) === 1, 'Defend, forward, Attack');
+  ok(tryIt([{ pD: 1, D: 1 }, {}, {}, { pA: 1, A: 1 }]) === 1, 'Defend then Attack (no direction) counts as forward');
+  ok(tryIt([{ pD: 1, D: 1, pA: 1, A: 1 }]) === 1, 'Defend and Attack on the same frame');
+  ok(tryIt([{ pD: 1, D: 1 }, { dirs: { r: 1 }, x: 1, pA: 1, A: 1 }]) === 1, 'forward and Attack on the same frame');
+  ok(tryIt([{ x: 1 }, { x: 1, pD: 1, D: 1 }, { x: 1 }, { x: 1, pA: 1, A: 1 }]) === 1, 'already holding forward while pressing Defend');
+  ok(tryIt([{ pA: 1, A: 1 }, {}, {}]) === 0, 'a plain Attack is still a punch');
 }
 // 4) bots play stages
 function playStage(hero, lv, si, secs = 240) {

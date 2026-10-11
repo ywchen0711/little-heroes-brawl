@@ -1,5 +1,5 @@
 // The player's profile: hero levels, EXP, skill points, learned skills, gold, equipment, items. Pure, saved as JSON.
-import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX, SKILLS, moveList } from './data.js?v=4';
+import { HEROES, HERO_IDS, OLD_HEROES, ENEMIES, GEAR, ITEMS, SLOTS, LEVEL_EXP, MAX_LV, SKILL_LV_REQ, SKILL_MAX, SKILLS, moveList } from './data.js?v=5';
 
 export function newHeroRec(heroId) { const r = { lv: 1, exp: 0, sp: 0, equip: { glove: null, wear: null, shoes: null, charm: null } }; return heroId ? normRec(r, heroId) : r; }
 // learned moves ({ skillId: level }) and the 6-slot loadout; converts records from before loadouts existed
